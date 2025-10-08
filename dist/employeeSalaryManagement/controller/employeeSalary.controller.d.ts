@@ -6,9 +6,9 @@ export declare class EmployeeSalaryController {
     private readonly employeeSalaryService;
     private readonly errorMessageService;
     constructor(employeeSalaryService: EmployeeSalaryService, errorMessageService: ErrorMessageService);
-    createEmployee(requestDto: EmployeeSalaryRequestDto): Promise<SuccessResponseDto>;
-    updateEmployee(id: string, requestDto: Partial<EmployeeSalaryRequestDto>): Promise<SuccessResponseDto>;
-    getEmployee(id: string): Promise<SuccessResponseDto>;
-    deleteEmployee(id: string): Promise<SuccessResponseDto>;
-    getAllEmployees(): Promise<any>;
+    createEmployeeSalary(requestDto: EmployeeSalaryRequestDto): Promise<SuccessResponseDto>;
+    updateEmployeeSalary(employee_id: string, requestDto: Partial<EmployeeSalaryRequestDto>): Promise<SuccessResponseDto>;
+    getEmployeeSalary(employee_id: string): Promise<SuccessResponseDto>;
+    deleteEmployeeSalary(id: string): Promise<SuccessResponseDto>;
+    getAllEmployeeSalaries(): Promise<SuccessResponseDto>;
 }

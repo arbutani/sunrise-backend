@@ -7,21 +7,22 @@ exports.EmployeeDto = void 0;
 const moment_1 = __importDefault(require("moment"));
 class EmployeeDto {
     id;
-    employee_name;
+    name;
     email_address;
-    employee_type;
+    type;
     reference_number;
-    reference_number_date;
+    reference_date;
     createdAt;
     updatedAt;
+    deletedAt;
     constructor(data) {
         data = data.dataValues ? data.dataValues : data;
         this.id = data.id;
         this.reference_number = data.reference_number;
-        this.reference_number_date = data.reference_number_date;
-        this.employee_name = data.employee_name;
+        this.reference_date = data.reference_date;
+        this.name = data.name;
         this.email_address = data.email_address;
-        this.employee_type = data.type;
+        this.type = data.type;
         const createdAt = data.createdAt
             ? data.createdAt
             : data.created_at
@@ -32,11 +33,19 @@ class EmployeeDto {
             : data.updated_at
                 ? data.updated_at
                 : '';
+        const deletedAt = data.deletedAt
+            ? data.deletedAt
+            : data.deleted_at
+                ? data.deleted_at
+                : '';
         if (createdAt) {
             this.createdAt = (0, moment_1.default)(createdAt, 'YYYY-MM-DD HH:mm:ss').format('DD-MM-YYYY hh:mm A');
         }
         if (updatedAt) {
             this.updatedAt = (0, moment_1.default)(updatedAt, 'YYYY-MM-DD HH:mm:ss').format('DD-MM-YYYY hh:mm A');
+        }
+        if (deletedAt) {
+            this.deletedAt = (0, moment_1.default)(deletedAt, 'YYYY-MM-DD HH:mm:ss').format('DD-MM-YYYY hh:mm A');
         }
     }
 }

@@ -20,6 +20,7 @@ const common_1 = require("@nestjs/common");
 const errormessage_service_1 = require("../../shared/services/errormessage.service");
 const moment_1 = __importDefault(require("moment"));
 const sequelize_typescript_1 = require("sequelize-typescript");
+const employeeManagement_entity_1 = require("../../employeeManagement/entity/employeeManagement.entity");
 const employeeSalary_dto_1 = require("../dto/employeeSalary.dto");
 let EmployeeSalaryService = class EmployeeSalaryService {
     employeeSalaryRepository;
@@ -33,121 +34,247 @@ let EmployeeSalaryService = class EmployeeSalaryService {
         this.errorMessageService = errorMessageService;
     }
     async create(requestDto) {
-        const transaction = await this.sequelize.transaction();
         try {
-            const lastEmployeeSalary = await this.employeeSalaryRepository.findOne({
-                order: [['createdAt', 'DESC']],
-                transaction,
+            const findEmployee = await this.employeeRepository.findOne({
+                where: {
+                    id: requestDto.employee_id,
+                },
             });
-            let nextSeriesNumber = 1;
-            if (lastEmployeeSalary && lastEmployeeSalary.reference_number) {
-                const match = lastEmployeeSalary.reference_number.match(/\d+/);
-                if (match) {
-                    const lastSeriesNumber = parseInt(match[0], 10);
-                    if (!isNaN(lastSeriesNumber)) {
-                        nextSeriesNumber = lastSeriesNumber + 1;
-                    }
-                }
+            if (!findEmployee) {
+                throw this.errorMessageService.GeneralErrorCore('Employee not found.', 200);
             }
-            const dateString = (0, moment_1.default)().format('DDMMYY');
-            const newReferenceNumber = `ES${nextSeriesNumber}-${dateString}`;
-            const fields = {
+            const existingSalary = await this.employeeSalaryRepository.findOne({
+                where: {
+                    employee_id: requestDto.employee_id,
+                },
+            });
+            if (existingSalary) {
+                throw this.errorMessageService.GeneralErrorCore('Salary record already exists for this employee.', 200);
+            }
+            let fields = {
                 employee_id: requestDto.employee_id,
                 monthly_salary: requestDto.monthly_salary,
                 working_days: requestDto.working_days,
                 working_hour: requestDto.working_hour,
-                over_time: requestDto.over_time,
-                leave_day: requestDto.leave_day,
-                reference_number: newReferenceNumber,
-                reference_number_date: (0, moment_1.default)().format('YYYY-MM-DD HH:mm:ss'),
                 createdAt: (0, moment_1.default)().format('YYYY-MM-DD HH:mm:ss'),
                 updatedAt: (0, moment_1.default)().format('YYYY-MM-DD HH:mm:ss'),
             };
-            const employeesalary = await this.employeeSalaryRepository.create(fields, { transaction });
-            await transaction.commit();
-            return new employeeSalary_dto_1.EmployeeSalaryDto(employeesalary);
+            const employeeSalary = await this.employeeSalaryRepository.create(fields);
+            if (employeeSalary) {
+                return new employeeSalary_dto_1.EmployeeSalaryDto(employeeSalary);
+            }
+            else {
+                throw this.errorMessageService.GeneralErrorCore('Failed to save employee salary data.', 200);
+            }
         }
         catch (error) {
-            await transaction.rollback();
             throw this.errorMessageService.CatchHandler(error);
         }
     }
     async update(employee_id, requestDto) {
         try {
             const existingSalary = await this.employeeSalaryRepository.findOne({
-                where: { employee_id },
+                where: {
+                    employee_id: employee_id,
+                },
             });
             if (!existingSalary) {
-                throw this.errorMessageService.GeneralErrorCore('Employee Salary not found', 404);
-            }
-            const updatedFields = { ...requestDto };
-            if (updatedFields.reference_number_date) {
-                updatedFields.reference_number_date = new Date(updatedFields.reference_number_date);
-            }
-            if (updatedFields.updatedAt) {
-                updatedFields.updatedAt = new Date(updatedFields.updatedAt);
-            }
-            await this.employeeSalaryRepository.update(updatedFields, {
-                where: { employee_id },
-            });
-            const updatedSalary = await this.employeeSalaryRepository.findOne({
-                where: { employee_id },
-            });
-            return new employeeSalary_dto_1.EmployeeSalaryDto(updatedSalary);
-        }
-        catch (error) {
-            throw this.errorMessageService.CatchHandler(error);
-        }
-    }
-    async get(employee_id) {
-        try {
-            const employeesalary = await this.employeeSalaryRepository.findOne({
-                where: { employee_id: employee_id },
-            });
-            if (!employeesalary) {
                 throw this.errorMessageService.GeneralErrorCore('Employee salary not found', 404);
             }
-            return new employeeSalary_dto_1.EmployeeSalaryDto(employeesalary);
+            if (requestDto.employee_id && requestDto.employee_id !== employee_id) {
+                const newEmployee = await this.employeeRepository.findOne({
+                    where: {
+                        id: requestDto.employee_id,
+                    },
+                });
+                if (!newEmployee) {
+                    throw this.errorMessageService.GeneralErrorCore('New employee not found', 200);
+                }
+                const duplicateSalary = await this.employeeSalaryRepository.findOne({
+                    where: {
+                        employee_id: requestDto.employee_id,
+                    },
+                });
+                if (duplicateSalary) {
+                    throw this.errorMessageService.GeneralErrorCore('Salary record already exists for the new employee', 200);
+                }
+            }
+            let updateFields = {
+                ...requestDto,
+                updatedAt: (0, moment_1.default)().format('YYYY-MM-DD HH:mm:ss'),
+            };
+            await this.employeeSalaryRepository.update(updateFields, {
+                where: { employee_id: employee_id },
+            });
+            const updatedEmployeeId = requestDto.employee_id || employee_id;
+            const updatedSalary = await this.employeeSalaryRepository.findOne({
+                where: { employee_id: updatedEmployeeId },
+            });
+            if (updatedSalary) {
+                return new employeeSalary_dto_1.EmployeeSalaryDto(updatedSalary);
+            }
+            else {
+                throw this.errorMessageService.GeneralErrorCore('Failed to retrieve updated salary record', 200);
+            }
         }
         catch (error) {
             throw this.errorMessageService.CatchHandler(error);
         }
     }
-    async deleteEmployee(id) {
-        const transaction = await this.sequelize.transaction();
+    async get(id, type = 'employee_id') {
         try {
-            const employeesalary = await this.employeeSalaryRepository.findByPk(id, {
-                transaction,
-            });
-            if (!employeesalary) {
-                await transaction.rollback();
-                throw this.errorMessageService.GeneralErrorCore('Employee not found', 404);
+            let employeeSalary;
+            if (type === 'id') {
+                employeeSalary = await this.employeeSalaryRepository.findByPk(id);
+            }
+            else {
+                employeeSalary = await this.employeeSalaryRepository.findOne({
+                    where: {
+                        employee_id: id,
+                    },
+                });
+            }
+            if (!employeeSalary) {
+                throw this.errorMessageService.GeneralErrorCore('Employee salary not found', 404);
+            }
+            return new employeeSalary_dto_1.EmployeeSalaryDto(employeeSalary);
+        }
+        catch (error) {
+            throw this.errorMessageService.CatchHandler(error);
+        }
+    }
+    async deleteEmployeeSalary(id) {
+        try {
+            const employeeSalary = await this.employeeSalaryRepository.findByPk(id);
+            if (!employeeSalary) {
+                throw this.errorMessageService.GeneralErrorCore('Employee salary not found', 404);
             }
             const deleted = await this.employeeSalaryRepository.destroy({
                 where: { id: id },
-                transaction,
             });
             if (deleted) {
-                await transaction.commit();
                 return { message: 'Employee salary deleted successfully' };
             }
             else {
-                await transaction.rollback();
-                throw this.errorMessageService.GeneralErrorCore('Failed to delete Employee Salary', 200);
+                throw this.errorMessageService.GeneralErrorCore('Failed to delete employee salary', 200);
             }
         }
         catch (error) {
-            await transaction.rollback();
             throw this.errorMessageService.CatchHandler(error);
         }
     }
-    async getAllEmployees() {
+    async getAllEmployeeSalaries(requestDto) {
         try {
-            const employees = await this.employeeSalaryRepository.findAll();
-            if (!employees || employees.length === 0) {
-                throw this.errorMessageService.GeneralErrorCore('NO Employee found', 404);
+            if (requestDto && Object.keys(requestDto).length > 0) {
+                const { query, count_query } = await this.queryBuilder(requestDto);
+                const [count, count_metadata] = await this.sequelize.query(count_query, {
+                    raw: true,
+                });
+                const countRows = count;
+                const [results, metadata] = await this.sequelize.query(query, {
+                    raw: true,
+                });
+                const listData = await Promise.all(results.map(async (employeeSalary) => {
+                    if (employeeSalary['createdAt']) {
+                        employeeSalary['createdAt'] = (0, moment_1.default)(employeeSalary['createdAt']).format('DD-MM-YYYY HH:mm A');
+                    }
+                    if (employeeSalary['updatedAt']) {
+                        employeeSalary['updatedAt'] = (0, moment_1.default)(employeeSalary['updatedAt']).format('DD-MM-YYYY HH:mm A');
+                    }
+                    return employeeSalary;
+                }));
+                return {
+                    recordsTotal: Number(countRows.length > 0 && countRows[0]['count'] != ''
+                        ? countRows[0]['count']
+                        : 0),
+                    recordsFiltered: listData.length,
+                    data: listData,
+                };
             }
-            return employees.map((employee) => new employeeSalary_dto_1.EmployeeSalaryDto(employee));
+            else {
+                const employeeSalaries = await this.employeeSalaryRepository.findAll({
+                    include: [
+                        {
+                            model: employeeManagement_entity_1.Employee,
+                            attributes: ['id', 'name', 'email_address'],
+                        },
+                    ],
+                });
+                if (!employeeSalaries || employeeSalaries.length === 0) {
+                    throw this.errorMessageService.GeneralErrorCore('No employee salaries found', 404);
+                }
+                return employeeSalaries.map((salary) => new employeeSalary_dto_1.EmployeeSalaryDto(salary));
+            }
+        }
+        catch (error) {
+            throw this.errorMessageService.CatchHandler(error);
+        }
+    }
+    async queryBuilder(requestDto) {
+        try {
+            const columns = [
+                'id',
+                'employee_id',
+                'monthly_salary',
+                'working_days',
+                'working_hour',
+            ];
+            let where = '';
+            if (requestDto.employee_id && requestDto.employee_id != '') {
+                if (where != '') {
+                    where += ` AND `;
+                }
+                where += ` employee_id='${requestDto.employee_id}' `;
+            }
+            if (requestDto.search && requestDto.search.value) {
+                const search = requestDto.search.value;
+                if (search != '') {
+                    for (const column of requestDto.columns) {
+                        if (column.searchable != null && column.searchable == 'true') {
+                            if (where != '') {
+                                where += ` AND `;
+                            }
+                            where += ` ${columns[column.data]} ILIKE '%${search}%' `;
+                        }
+                    }
+                }
+            }
+            if (requestDto.id != null && requestDto.id != '') {
+                if (where != '') {
+                    where += ` AND `;
+                }
+                where = " employee_id='" + requestDto.id + "' ";
+            }
+            let query = `SELECT * FROM employee_salary_management`;
+            let countQuery = `SELECT COUNT(*) FROM employee_salary_management`;
+            if (where != '') {
+                query += ` WHERE ${where}`;
+                countQuery += ` WHERE ${where}`;
+            }
+            let orderBy = '';
+            if (requestDto.order && requestDto.order.length > 0) {
+                for (const order of requestDto.order) {
+                    if (orderBy != '') {
+                        orderBy += ',';
+                    }
+                    orderBy += `${order.column} ${order.dir}`;
+                }
+                const order = requestDto.order[0];
+                orderBy = `${columns[order.column]} ${order.dir}`;
+            }
+            if (orderBy == '') {
+                orderBy = 'created_at DESC';
+            }
+            query += ` ORDER BY ${orderBy}`;
+            if (requestDto.length && requestDto.start) {
+                if (requestDto.length != -1) {
+                    query += ` LIMIT ${requestDto.length} OFFSET ${requestDto.start}`;
+                }
+            }
+            else {
+                query += ` LIMIT 10 OFFSET 0`;
+            }
+            return { query: query, count_query: countQuery };
         }
         catch (error) {
             throw this.errorMessageService.CatchHandler(error);

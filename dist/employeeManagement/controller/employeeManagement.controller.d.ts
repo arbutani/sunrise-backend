@@ -2,6 +2,7 @@ import { ErrorMessageService } from 'src/shared/services/errormessage.service';
 import { SuccessResponseDto } from 'src/shared/dto/successResponse.dto';
 import { EmployeeRequestDto } from '../dto/employeeManagementRequest.dto';
 import { EmployeeService } from '../service/employeeManagement.service';
+import { EmployeePutRequestDto } from '../dto/employeeManagementputRequest.dto';
 export declare class EmployeeController {
     private readonly employeeService;
     private readonly errorMessageService;
@@ -11,7 +12,7 @@ export declare class EmployeeController {
         email: string;
         password: string;
     }): Promise<SuccessResponseDto>;
-    updateEmployee(id: string, requestDto: EmployeeRequestDto): Promise<SuccessResponseDto>;
+    updateEmployee(id: string, requestDto: EmployeePutRequestDto): Promise<SuccessResponseDto>;
     getEmployee(id: string): Promise<SuccessResponseDto>;
     getAllEmployees(query: any): Promise<any>;
     deleteEmployee(id: string): Promise<SuccessResponseDto>;

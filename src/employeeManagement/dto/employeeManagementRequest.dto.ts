@@ -5,7 +5,7 @@ import { EmployeeType } from 'src/enum/employeeManagement/employeeType.enum';
 export class EmployeeRequestDto {
   @IsNotEmpty({ message: 'Employee name is required' })
   @IsString({ message: 'Employee name must be a string' })
-  employee_name: string;
+  name: string;
 
   @IsNotEmpty({ message: 'Email address is required' })
   @IsString({ message: 'Email address must be a string' })
@@ -19,5 +19,5 @@ export class EmployeeRequestDto {
   @IsEnum(EmployeeType, {
     message: 'Employee type must be one of the allowed values',
   })
-  employee_type: EmployeeType;
+  type: EmployeeType;
 }

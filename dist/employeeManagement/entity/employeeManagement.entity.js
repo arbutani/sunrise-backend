@@ -11,6 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Employee = void 0;
 const sequelize_typescript_1 = require("sequelize-typescript");
+const employeeSalary_entity_1 = require("../../employeeSalaryManagement/entity/employeeSalary.entity");
 const employeeType_enum_1 = require("../../enum/employeeManagement/employeeType.enum");
 let Employee = class Employee extends sequelize_typescript_1.Model {
 };
@@ -36,14 +37,14 @@ __decorate([
         type: sequelize_typescript_1.DataType.DATEONLY,
     }),
     __metadata("design:type", Date)
-], Employee.prototype, "reference_number_date", void 0);
+], Employee.prototype, "reference_date", void 0);
 __decorate([
     (0, sequelize_typescript_1.Column)({
         type: sequelize_typescript_1.DataType.STRING,
         allowNull: false,
     }),
     __metadata("design:type", String)
-], Employee.prototype, "employee_name", void 0);
+], Employee.prototype, "name", void 0);
 __decorate([
     (0, sequelize_typescript_1.Column)({
         type: sequelize_typescript_1.DataType.STRING,
@@ -54,7 +55,7 @@ __decorate([
 __decorate([
     (0, sequelize_typescript_1.Column)({
         type: sequelize_typescript_1.DataType.STRING,
-        allowNull: false,
+        allowNull: true,
     }),
     __metadata("design:type", String)
 ], Employee.prototype, "password", void 0);
@@ -63,7 +64,7 @@ __decorate([
         type: sequelize_typescript_1.DataType.ENUM(employeeType_enum_1.EmployeeType.ADMIN, employeeType_enum_1.EmployeeType.STORE_MANAGER, employeeType_enum_1.EmployeeType.DELIVERY_DRIVER, employeeType_enum_1.EmployeeType.STORE_SUPERVISOR),
     }),
     __metadata("design:type", String)
-], Employee.prototype, "employee_type", void 0);
+], Employee.prototype, "type", void 0);
 __decorate([
     sequelize_typescript_1.CreatedAt,
     (0, sequelize_typescript_1.Column)({
@@ -82,6 +83,19 @@ __decorate([
     }),
     __metadata("design:type", Date)
 ], Employee.prototype, "updatedAt", void 0);
+__decorate([
+    sequelize_typescript_1.DeletedAt,
+    (0, sequelize_typescript_1.Column)({
+        field: 'deleted_at',
+        type: sequelize_typescript_1.DataType.DATE,
+        allowNull: true,
+    }),
+    __metadata("design:type", Date)
+], Employee.prototype, "deletedAt", void 0);
+__decorate([
+    (0, sequelize_typescript_1.HasMany)(() => employeeSalary_entity_1.EmployeeSalary),
+    __metadata("design:type", Array)
+], Employee.prototype, "salaries", void 0);
 exports.Employee = Employee = __decorate([
     (0, sequelize_typescript_1.Table)({
         tableName: 'employee_managment',

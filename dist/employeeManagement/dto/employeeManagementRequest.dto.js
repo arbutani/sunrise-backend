@@ -13,17 +13,17 @@ exports.EmployeeRequestDto = void 0;
 const class_validator_1 = require("class-validator");
 const employeeType_enum_1 = require("../../enum/employeeManagement/employeeType.enum");
 class EmployeeRequestDto {
-    employee_name;
+    name;
     email_address;
     password;
-    employee_type;
+    type;
 }
 exports.EmployeeRequestDto = EmployeeRequestDto;
 __decorate([
     (0, class_validator_1.IsNotEmpty)({ message: 'Employee name is required' }),
     (0, class_validator_1.IsString)({ message: 'Employee name must be a string' }),
     __metadata("design:type", String)
-], EmployeeRequestDto.prototype, "employee_name", void 0);
+], EmployeeRequestDto.prototype, "name", void 0);
 __decorate([
     (0, class_validator_1.IsNotEmpty)({ message: 'Email address is required' }),
     (0, class_validator_1.IsString)({ message: 'Email address must be a string' }),
@@ -40,5 +40,5 @@ __decorate([
         message: 'Employee type must be one of the allowed values',
     }),
     __metadata("design:type", String)
-], EmployeeRequestDto.prototype, "employee_type", void 0);
+], EmployeeRequestDto.prototype, "type", void 0);
 //# sourceMappingURL=employeeManagementRequest.dto.js.map

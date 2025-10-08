@@ -16,10 +16,6 @@ class EmployeeSalaryRequestDto {
     monthly_salary;
     working_days;
     working_hour;
-    over_time;
-    leave_day;
-    reference_number;
-    reference_number_date;
 }
 exports.EmployeeSalaryRequestDto = EmployeeSalaryRequestDto;
 __decorate([
@@ -33,33 +29,13 @@ __decorate([
     __metadata("design:type", Number)
 ], EmployeeSalaryRequestDto.prototype, "monthly_salary", void 0);
 __decorate([
+    (0, class_validator_1.IsNotEmpty)({ message: 'Working days is required' }),
     (0, class_validator_1.IsNumber)({}, { message: 'Working days must be a number' }),
-    (0, class_validator_1.IsOptional)(),
     __metadata("design:type", Number)
 ], EmployeeSalaryRequestDto.prototype, "working_days", void 0);
 __decorate([
+    (0, class_validator_1.IsNotEmpty)({ message: 'Working hour is required' }),
     (0, class_validator_1.IsNumber)({}, { message: 'Working hour must be a number' }),
-    (0, class_validator_1.IsOptional)(),
     __metadata("design:type", Number)
 ], EmployeeSalaryRequestDto.prototype, "working_hour", void 0);
-__decorate([
-    (0, class_validator_1.IsNumber)({}, { message: 'Overtime must be a number' }),
-    (0, class_validator_1.IsOptional)(),
-    __metadata("design:type", Number)
-], EmployeeSalaryRequestDto.prototype, "over_time", void 0);
-__decorate([
-    (0, class_validator_1.IsNumber)({}, { message: 'Leave day must be a number' }),
-    (0, class_validator_1.IsOptional)(),
-    __metadata("design:type", Number)
-], EmployeeSalaryRequestDto.prototype, "leave_day", void 0);
-__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsString)({ message: 'Reference number must be a string' }),
-    __metadata("design:type", String)
-], EmployeeSalaryRequestDto.prototype, "reference_number", void 0);
-__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsString)({ message: 'Reference number date must be a string' }),
-    __metadata("design:type", String)
-], EmployeeSalaryRequestDto.prototype, "reference_number_date", void 0);
 //# sourceMappingURL=employeeSalaryRequest.dto.js.map

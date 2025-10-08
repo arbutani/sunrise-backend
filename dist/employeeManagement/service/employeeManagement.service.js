@@ -53,7 +53,6 @@ const common_1 = require("@nestjs/common");
 const errormessage_service_1 = require("../../shared/services/errormessage.service");
 const moment_1 = __importDefault(require("moment"));
 const sequelize_1 = require("sequelize");
-const sequelize_typescript_1 = require("sequelize-typescript");
 const employeeManagement_dto_1 = require("../dto/employeeManagement.dto");
 const bcrypt = __importStar(require("bcrypt"));
 const jwt_1 = require("@nestjs/jwt");
@@ -70,12 +69,12 @@ let EmployeeService = class EmployeeService {
         this.errorMessageService = errorMessageService;
         this.jwtService = jwtService;
     }
-    async createemployee(requestDto) {
+    async createEmployee(requestDto) {
         try {
-            const findEmployee = await this.employeeRepository.findOne({
+            const existingEmployee = await this.employeeRepository.findOne({
                 where: { email_address: requestDto.email_address },
             });
-            if (findEmployee) {
+            if (existingEmployee) {
                 throw this.errorMessageService.GeneralErrorCore('Employee with this email address already exists', 200);
             }
             const lastEmployee = await this.employeeRepository.findOne({
@@ -96,13 +95,14 @@ let EmployeeService = class EmployeeService {
             const hashedPassword = await bcrypt.hash(requestDto.password, 10);
             const employeeFields = {
                 reference_number: newReferenceNumber,
-                reference_number_date: (0, moment_1.default)().format('YYYY-MM-DD HH:mm:ss'),
-                employee_name: requestDto.employee_name,
+                reference_date: (0, moment_1.default)().format('YYYY-MM-DD HH:mm:ss'),
+                name: requestDto.name,
                 email_address: requestDto.email_address,
                 password: hashedPassword,
-                employee_type: requestDto.employee_type,
+                type: requestDto.type,
                 createdAt: (0, moment_1.default)().format('YYYY-MM-DD HH:mm:ss'),
                 updatedAt: (0, moment_1.default)().format('YYYY-MM-DD HH:mm:ss'),
+                deletedAt: null,
             };
             const employee = await this.employeeRepository.create(employeeFields);
             const newEmployee = await this.employeeRepository.findByPk(employee.id);
@@ -127,8 +127,8 @@ let EmployeeService = class EmployeeService {
             const payload = {
                 sub: employee.id,
                 email: employee.email_address,
-                type: employee.employee_type,
-                username: employee.employee_name,
+                type: employee.type,
+                username: employee.name,
             };
             const token = await this.jwtService.signAsync(payload, {
                 secret: 'MY_SECRET_KEY',
@@ -137,7 +137,7 @@ let EmployeeService = class EmployeeService {
             return {
                 access_token: token,
                 employee: new employeeManagement_dto_1.EmployeeDto(employee),
-                employee_type: employee.employee_type,
+                type: employee.type,
             };
         }
         catch (error) {
@@ -165,9 +165,9 @@ let EmployeeService = class EmployeeService {
                 ? await bcrypt.hash(requestDto.password, 10)
                 : oldEmployee.password;
             const employeeFields = {
-                employee_name: requestDto.employee_name,
+                name: requestDto.name,
                 email_address: requestDto.email_address,
-                employee_type: requestDto.employee_type,
+                type: requestDto.type,
                 password: hashedPassword,
                 updatedAt: (0, moment_1.default)().format('YYYY-MM-DD HH:mm:ss'),
             };
@@ -196,83 +196,117 @@ let EmployeeService = class EmployeeService {
             throw this.errorMessageService.CatchHandler(error);
         }
     }
-    async getAllEmployees(query) {
+    async queryBuilder(requestDto) {
         try {
-            const parsedQuery = {
-                start: query.start || '0',
-                length: query.length || '10',
-                draw: query.draw || '1',
-                search: {},
-                order: [],
-                columns: [],
-            };
-            if (query['search[value]']) {
-                parsedQuery.search.value = query['search[value]'];
-                parsedQuery.search.regex = query['search[regex]'] || 'false';
-            }
-            let orderIndex = 0;
-            while (query[`order[${orderIndex}][column]`]) {
-                parsedQuery.order.push({
-                    column: query[`order[${orderIndex}][column]`],
-                    dir: query[`order[${orderIndex}][dir]`] || 'asc',
-                });
-                orderIndex++;
-            }
-            let columnIndex = 0;
-            while (query[`columns[${columnIndex}][data]`]) {
-                parsedQuery.columns.push({
-                    data: query[`columns[${columnIndex}][data]`],
-                    name: query[`columns[${columnIndex}][name]`] || '',
-                    searchable: query[`columns[${columnIndex}][searchable]`] || 'true',
-                    orderable: query[`columns[${columnIndex}][orderable]`] || 'true',
-                    search: {
-                        value: query[`columns[${columnIndex}][search][value]`] || '',
-                        regex: query[`columns[${columnIndex}][search][regex]`] || 'false',
-                    },
-                });
-                columnIndex++;
-            }
-            const { start, length, search, order, columns } = parsedQuery;
-            const whereCondition = {};
-            if (search && search.value) {
-                whereCondition[sequelize_1.Op.or] = [
-                    { employee_name: { [sequelize_1.Op.like]: `%${search.value}%` } },
-                    { email_address: { [sequelize_1.Op.like]: `%${search.value}%` } },
-                ];
-            }
-            const orderCondition = [];
-            if (order &&
-                order.length > 0 &&
-                columns &&
-                columns.length > order[0].column) {
-                const orderByColumn = columns[order[0].column].data;
-                const orderDirection = order[0].dir.toUpperCase();
-                if (orderByColumn) {
-                    orderCondition.push([orderByColumn, orderDirection]);
+            const columns = [
+                'id',
+                'reference_number',
+                'name',
+                'email_address',
+                'type',
+                'createdAt',
+            ];
+            let where = 'deleted_at IS NULL';
+            if (requestDto.search && requestDto.search.value) {
+                const search = requestDto.search.value;
+                if (search != '') {
+                    for (const column of requestDto.columns) {
+                        if (column.searchable != null && column.searchable == 'true') {
+                            if (where != '') {
+                                where += ` AND `;
+                            }
+                            where += ` ${columns[column.data]} ILIKE '%${search}%' `;
+                        }
+                    }
                 }
             }
-            const recordsTotal = await this.employeeRepository.count({
-                distinct: true,
-            });
-            const result = await this.employeeRepository.findAndCountAll({
-                limit: parseInt(length, 10),
-                offset: parseInt(start, 10),
-                where: whereCondition,
-                order: orderCondition,
-                distinct: true,
-            });
-            const employees = result.rows.map((employee) => {
-                const employeeData = new employeeManagement_dto_1.EmployeeDto(employee);
+            if (requestDto.type && requestDto.type != '') {
+                if (where != '') {
+                    where += ` AND `;
+                }
+                where += ` type='${requestDto.type}' `;
+            }
+            if (requestDto.name && requestDto.name != '') {
+                if (where != '') {
+                    where += ` AND `;
+                }
+                where += ` name ILIKE '%${requestDto.name}%' `;
+            }
+            let query = `SELECT * FROM employees`;
+            let countQuery = `SELECT COUNT(*) FROM employees`;
+            if (where != '') {
+                query += ` WHERE ${where}`;
+                countQuery += ` WHERE ${where}`;
+            }
+            let orderBy = '';
+            if (requestDto.order && requestDto.order.length > 0) {
+                for (const order of requestDto.order) {
+                    if (orderBy != '') {
+                        orderBy += ',';
+                    }
+                    orderBy += `${order.column} ${order.dir}`;
+                }
+                const order = requestDto.order[0];
+                orderBy = `${columns[order.column]} ${order.dir}`;
+            }
+            if (orderBy == '') {
+                orderBy = 'created_at DESC';
+            }
+            query += ` ORDER BY ${orderBy}`;
+            if (requestDto.length && requestDto.start) {
+                if (requestDto.length != -1) {
+                    query += ` LIMIT ${requestDto.length} OFFSET ${requestDto.start}`;
+                }
+            }
+            else {
+                query += ` LIMIT 10 OFFSET 0`;
+            }
+            return { query: query, count_query: countQuery };
+        }
+        catch (error) {
+            throw this.errorMessageService.CatchHandler(error);
+        }
+    }
+    async getAllEmployees(requestDto) {
+        try {
+            if (requestDto && Object.keys(requestDto).length > 0) {
+                const { query, count_query } = await this.queryBuilder(requestDto);
+                const [count, count_metadata] = await this.sequelize.query(count_query, {
+                    raw: true,
+                });
+                const countRows = count;
+                const [results, metadata] = await this.sequelize.query(query, {
+                    raw: true,
+                });
+                const listData = await Promise.all(results.map(async (employee) => {
+                    if (employee['createdAt']) {
+                        employee['createdAt'] = (0, moment_1.default)(employee['createdAt']).format('DD-MM-YYYY HH:mm A');
+                    }
+                    if (employee['updatedAt']) {
+                        employee['updatedAt'] = (0, moment_1.default)(employee['updatedAt']).format('DD-MM-YYYY HH:mm A');
+                    }
+                    if (employee['reference_date']) {
+                        employee['reference_date'] = (0, moment_1.default)(employee['reference_date']).format('DD-MM-YYYY');
+                    }
+                    return employee;
+                }));
                 return {
-                    ...employeeData,
+                    recordsTotal: Number(countRows.length > 0 && countRows[0]['count'] != ''
+                        ? countRows[0]['count']
+                        : 0),
+                    recordsFiltered: listData.length,
+                    data: listData,
                 };
-            });
-            return {
-                draw: parsedQuery.draw,
-                data: employees,
-                recordsTotal: recordsTotal,
-                recordsFiltered: result.count,
-            };
+            }
+            else {
+                const employees = await this.employeeRepository.findAll({
+                    where: (0, sequelize_1.literal)('deleted_at IS NULL'),
+                });
+                if (!employees || employees.length === 0) {
+                    throw this.errorMessageService.GeneralErrorCore('No employees found', 404);
+                }
+                return employees.map((employee) => new employeeManagement_dto_1.EmployeeDto(employee));
+            }
         }
         catch (error) {
             throw this.errorMessageService.CatchHandler(error);
@@ -280,22 +314,13 @@ let EmployeeService = class EmployeeService {
     }
     async deleteEmployee(id) {
         try {
-            const employee = await this.employeeRepository.findByPk(id);
-            if (!employee) {
+            const [updatedRows] = await this.employeeRepository.update({ deletedAt: new Date() }, {
+                where: (0, sequelize_1.literal)(`id='${id}' AND deleted_at IS NULL`),
+            });
+            if (updatedRows === 0) {
                 throw this.errorMessageService.GeneralErrorCore('Employee not found', 404);
             }
-            await this.employeeSalaryRepository.destroy({
-                where: { employee_id: id },
-            });
-            const deleted = await this.employeeRepository.destroy({
-                where: { id: id },
-            });
-            if (deleted) {
-                return { message: 'Employee deleted successfully' };
-            }
-            else {
-                throw this.errorMessageService.GeneralErrorCore('Failed to delete Employee', 200);
-            }
+            return { message: 'Employee deleted successfully' };
         }
         catch (error) {
             throw this.errorMessageService.CatchHandler(error);
@@ -308,7 +333,7 @@ exports.EmployeeService = EmployeeService = __decorate([
     __param(0, (0, common_1.Inject)('EMPLOYEE_SALARY_REPOSITORY')),
     __param(1, (0, common_1.Inject)('EMPLOYEE_REPOSITORY')),
     __param(2, (0, common_1.Inject)('SEQUELIZE')),
-    __metadata("design:paramtypes", [Object, Object, sequelize_typescript_1.Sequelize,
+    __metadata("design:paramtypes", [Object, Object, sequelize_1.Sequelize,
         errormessage_service_1.ErrorMessageService,
         jwt_1.JwtService])
 ], EmployeeService);

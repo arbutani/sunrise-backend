@@ -12,9 +12,17 @@ export declare class EmployeeSalaryService {
     constructor(employeeSalaryRepository: typeof EmployeeSalary, employeeRepository: typeof Employee, sequelize: Sequelize, errorMessageService: ErrorMessageService);
     create(requestDto: EmployeeSalaryRequestDto): Promise<EmployeeSalaryDto>;
     update(employee_id: string, requestDto: Partial<EmployeeSalaryRequestDto>): Promise<EmployeeSalaryDto>;
-    get(employee_id: string): Promise<EmployeeSalaryDto>;
-    deleteEmployee(id: string): Promise<{
+    get(id: string, type?: string): Promise<EmployeeSalaryDto>;
+    deleteEmployeeSalary(id: string): Promise<{
         message: string;
     }>;
-    getAllEmployees(): Promise<EmployeeSalaryDto[]>;
+    getAllEmployeeSalaries(requestDto?: any): Promise<EmployeeSalaryDto[] | {
+        recordsTotal: number;
+        recordsFiltered: number;
+        data: any[];
+    }>;
+    queryBuilder(requestDto: any): Promise<{
+        query: string;
+        count_query: string;
+    }>;
 }

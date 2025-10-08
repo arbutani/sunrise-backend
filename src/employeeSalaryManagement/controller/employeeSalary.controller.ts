@@ -1,5 +1,13 @@
 /* eslint-disable prettier/prettier */
-import { Body, Controller, Delete, Get, Param, Post, Put } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  Put,
+} from '@nestjs/common';
 import { ErrorMessageService } from 'src/shared/services/errormessage.service';
 import { SuccessResponseDto } from 'src/shared/dto/successResponse.dto';
 import { EmployeeSalaryService } from '../service/employeeSalary.services';
@@ -13,16 +21,16 @@ export class EmployeeSalaryController {
   ) {}
 
   @Post()
-  async createEmployee(
+  async createEmployeeSalary(
     @Body() requestDto: EmployeeSalaryRequestDto,
   ): Promise<SuccessResponseDto> {
     try {
-      const EmployeeSalary =
+      const employeeSalary =
         await this.employeeSalaryService.create(requestDto);
       return this.errorMessageService.success(
-        EmployeeSalary,
+        employeeSalary,
         true,
-        'Salary collected successfully',
+        'Salary created successfully',
         {},
       );
     } catch (error) {
@@ -30,13 +38,16 @@ export class EmployeeSalaryController {
     }
   }
 
-  @Put(':id')
-  async updateEmployee(
-    @Param('id') id: string,
-    @Body() requestDto: Partial<EmployeeSalaryRequestDto>, // Allow partial update
+  @Put(':employee_id')
+  async updateEmployeeSalary(
+    @Param('employee_id') employee_id: string,
+    @Body() requestDto: Partial<EmployeeSalaryRequestDto>,
   ): Promise<SuccessResponseDto> {
     try {
-      const updatedSalary = await this.employeeSalaryService.update(id, requestDto);
+      const updatedSalary = await this.employeeSalaryService.update(
+        employee_id,
+        requestDto,
+      );
       return this.errorMessageService.success(
         updatedSalary,
         true,
@@ -48,12 +59,14 @@ export class EmployeeSalaryController {
     }
   }
 
-  @Get(':id')
-  async getEmployee(@Param('id') id: string): Promise<SuccessResponseDto> {
+  @Get('employee/:employee_id')
+  async getEmployeeSalary(
+    @Param('employee_id') employee_id: string,
+  ): Promise<SuccessResponseDto> {
     try {
-      const EmployeeSalary = await this.employeeSalaryService.get(id);
+      const employeeSalary = await this.employeeSalaryService.get(employee_id);
       return this.errorMessageService.success(
-        EmployeeSalary,
+        employeeSalary,
         true,
         'Employee Salary retrieved successfully',
         {},
@@ -64,12 +77,13 @@ export class EmployeeSalaryController {
   }
 
   @Delete(':id')
-  async deleteEmployee(@Param('id') id: string): Promise<SuccessResponseDto> {
+  async deleteEmployeeSalary(
+    @Param('id') id: string,
+  ): Promise<SuccessResponseDto> {
     try {
-      const EmployeeSalary =
-        await this.employeeSalaryService.deleteEmployee(id);
+      const result = await this.employeeSalaryService.deleteEmployeeSalary(id);
       return this.errorMessageService.success(
-        EmployeeSalary,
+        result,
         true,
         'Employee Salary deleted successfully',
         {},
@@ -80,9 +94,16 @@ export class EmployeeSalaryController {
   }
 
   @Get()
-  async getAllEmployees(): Promise<any> {
+  async getAllEmployeeSalaries(): Promise<SuccessResponseDto> {
     try {
-      return await this.employeeSalaryService.getAllEmployees();
+      const employeeSalaries =
+        await this.employeeSalaryService.getAllEmployeeSalaries();
+      return this.errorMessageService.success(
+        employeeSalaries,
+        true,
+        'Employee salaries retrieved successfully',
+        {},
+      );
     } catch (error) {
       throw this.errorMessageService.error(error);
     }

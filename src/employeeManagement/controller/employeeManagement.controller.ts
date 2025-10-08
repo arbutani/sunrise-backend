@@ -16,16 +16,15 @@ import { EmployeeRequestDto } from '../dto/employeeManagementRequest.dto';
 import { EmployeeService } from '../service/employeeManagement.service';
 import { JwtAuthGuard } from 'src/JwtAuthGuard/jwt_auth.guard';
 import { Public } from 'src/JwtAuthGuard/public.decorator';
+import { EmployeePutRequestDto } from '../dto/employeeManagementputRequest.dto';
 
-//@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard)
 @Controller('employe-managment')
 export class EmployeeController {
   constructor(
     private readonly employeeService: EmployeeService,
     private readonly errorMessageService: ErrorMessageService,
-  ) {
-    // Initialization code can go here if needed
-  }
+  ) {}
 
   @Post()
   async createEmployee(
@@ -33,7 +32,7 @@ export class EmployeeController {
   ): Promise<SuccessResponseDto> {
     try {
       const employee_managment =
-        await this.employeeService.createemployee(requestDto);
+        await this.employeeService.createEmployee(requestDto);
       return this.errorMessageService.success(
         employee_managment,
         true,
@@ -66,7 +65,7 @@ export class EmployeeController {
   @Put(':id')
   async updateEmployee(
     @Param('id') id: string,
-    @Body() requestDto: EmployeeRequestDto,
+    @Body() requestDto: EmployeePutRequestDto,
   ): Promise<SuccessResponseDto> {
     try {
       const employee_managment = await this.employeeService.updateEmployee(
@@ -99,14 +98,13 @@ export class EmployeeController {
     }
   }
   @Get()
-async getAllEmployees(@Query() query: any): Promise<any> {
+  async getAllEmployees(@Query() query: any): Promise<any> {
     try {
-        // Pass the query object from the request to the service
-        return await this.employeeService.getAllEmployees(query);
+      return await this.employeeService.getAllEmployees(query);
     } catch (error) {
-        throw this.errorMessageService.error(error);
+      throw this.errorMessageService.error(error);
     }
-}
+  }
   @Delete(':id')
   async deleteEmployee(@Param('id') id: string): Promise<SuccessResponseDto> {
     try {

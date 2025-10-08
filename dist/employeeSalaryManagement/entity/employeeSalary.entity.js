@@ -17,12 +17,6 @@ let EmployeeSalary = class EmployeeSalary extends sequelize_typescript_1.Model {
     monthly_salary;
     working_days;
     working_hour;
-    over_time;
-    leave_day;
-    total_attempts_day;
-    total_payable_salary;
-    reference_number;
-    reference_number_date;
 };
 exports.EmployeeSalary = EmployeeSalary;
 __decorate([
@@ -68,39 +62,6 @@ __decorate([
     __metadata("design:type", Number)
 ], EmployeeSalary.prototype, "working_hour", void 0);
 __decorate([
-    (0, sequelize_typescript_1.Column)({
-        type: sequelize_typescript_1.DataType.NUMBER,
-        allowNull: true,
-    }),
-    __metadata("design:type", Number)
-], EmployeeSalary.prototype, "over_time", void 0);
-__decorate([
-    (0, sequelize_typescript_1.Column)({
-        type: sequelize_typescript_1.DataType.NUMBER,
-        allowNull: true,
-    }),
-    __metadata("design:type", Number)
-], EmployeeSalary.prototype, "leave_day", void 0);
-__decorate([
-    (0, sequelize_typescript_1.Column)({
-        type: sequelize_typescript_1.DataType.NUMBER,
-    }),
-    __metadata("design:type", Number)
-], EmployeeSalary.prototype, "total_attempts_day", void 0);
-__decorate([
-    (0, sequelize_typescript_1.Column)({
-        type: sequelize_typescript_1.DataType.NUMBER,
-    }),
-    __metadata("design:type", Number)
-], EmployeeSalary.prototype, "total_payable_salary", void 0);
-__decorate([
-    (0, sequelize_typescript_1.Column)({
-        type: sequelize_typescript_1.DataType.TEXT,
-        allowNull: true,
-    }),
-    __metadata("design:type", String)
-], EmployeeSalary.prototype, "reference_number", void 0);
-__decorate([
     sequelize_typescript_1.CreatedAt,
     (0, sequelize_typescript_1.Column)({
         field: 'created_at',
@@ -118,13 +79,6 @@ __decorate([
     }),
     __metadata("design:type", Date)
 ], EmployeeSalary.prototype, "updatedAt", void 0);
-__decorate([
-    (0, sequelize_typescript_1.Column)({
-        type: sequelize_typescript_1.DataType.DATEONLY,
-        allowNull: true,
-    }),
-    __metadata("design:type", Date)
-], EmployeeSalary.prototype, "reference_number_date", void 0);
 exports.EmployeeSalary = EmployeeSalary = __decorate([
     (0, sequelize_typescript_1.Table)({
         tableName: 'employee_salary_management',

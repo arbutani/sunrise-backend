@@ -17,7 +17,9 @@ const common_1 = require("@nestjs/common");
 const errormessage_service_1 = require("../../shared/services/errormessage.service");
 const employeeManagementRequest_dto_1 = require("../dto/employeeManagementRequest.dto");
 const employeeManagement_service_1 = require("../service/employeeManagement.service");
+const jwt_auth_guard_1 = require("../../JwtAuthGuard/jwt_auth.guard");
 const public_decorator_1 = require("../../JwtAuthGuard/public.decorator");
+const employeeManagementputRequest_dto_1 = require("../dto/employeeManagementputRequest.dto");
 let EmployeeController = class EmployeeController {
     employeeService;
     errorMessageService;
@@ -27,7 +29,7 @@ let EmployeeController = class EmployeeController {
     }
     async createEmployee(requestDto) {
         try {
-            const employee_managment = await this.employeeService.createemployee(requestDto);
+            const employee_managment = await this.employeeService.createEmployee(requestDto);
             return this.errorMessageService.success(employee_managment, true, 'Employee created successfully', {});
         }
         catch (error) {
@@ -100,7 +102,7 @@ __decorate([
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, employeeManagementRequest_dto_1.EmployeeRequestDto]),
+    __metadata("design:paramtypes", [String, employeeManagementputRequest_dto_1.EmployeePutRequestDto]),
     __metadata("design:returntype", Promise)
 ], EmployeeController.prototype, "updateEmployee", null);
 __decorate([
@@ -125,6 +127,7 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], EmployeeController.prototype, "deleteEmployee", null);
 exports.EmployeeController = EmployeeController = __decorate([
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     (0, common_1.Controller)('employe-managment'),
     __metadata("design:paramtypes", [employeeManagement_service_1.EmployeeService,
         errormessage_service_1.ErrorMessageService])

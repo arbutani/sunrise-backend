@@ -1,11 +1,12 @@
 export declare class EmployeeDto {
     id: string;
-    employee_name: string;
+    name: string;
     email_address: string;
-    employee_type: any;
+    type: any;
     reference_number: string;
-    reference_number_date: string;
+    reference_date: string;
     createdAt: string;
     updatedAt: string;
+    deletedAt: string;
     constructor(data: any);
 }

@@ -4,13 +4,8 @@ export declare class EmployeeSalaryDto {
     monthly_salary: number;
     working_days: number;
     working_hour: number;
-    over_time: number;
-    leave_day: number;
-    total_attempts_day: number;
-    total_payable_salary: number;
-    reference_number: string;
-    reference_number_date: string;
     createdAt: string;
     updatedAt: string;
+    name?: string;
     constructor(data: any);
 }

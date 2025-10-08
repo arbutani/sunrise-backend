@@ -52,34 +52,6 @@ export class EmployeeSalary extends Model<EmployeeSalary> {
   })
   working_hour: number;
 
-  @Column({
-    type: DataType.NUMBER,
-    allowNull: true,
-  })
-  over_time: number;
-
-  @Column({
-    type: DataType.NUMBER,
-    allowNull: true,
-  })
-  leave_day: number;
-
-  @Column({
-    type: DataType.NUMBER,
-  })
-  total_attempts_day: number;
-
-  @Column({
-    type: DataType.NUMBER,
-  })
-  total_payable_salary: number;
-
-  @Column({
-    type: DataType.TEXT,
-    allowNull: true,
-  })
-  reference_number: string;
-
   @CreatedAt
   @Column({
     field: 'created_at',
@@ -95,10 +67,4 @@ export class EmployeeSalary extends Model<EmployeeSalary> {
     allowNull: false,
   })
   declare updatedAt: Date;
-
-  @Column({
-    type: DataType.DATEONLY,
-    allowNull: true,
-  })
-  reference_number_date: Date;
 }
