@@ -37,10 +37,6 @@ __decorate([
     __metadata("design:type", String)
 ], EmployeeSalary.prototype, "employee_id", void 0);
 __decorate([
-    (0, sequelize_typescript_1.BelongsTo)(() => employeeManagement_entity_1.Employee),
-    __metadata("design:type", employeeManagement_entity_1.Employee)
-], EmployeeSalary.prototype, "employee", void 0);
-__decorate([
     (0, sequelize_typescript_1.Column)({
         type: sequelize_typescript_1.DataType.NUMBER,
         allowNull: true,
@@ -79,6 +75,10 @@ __decorate([
     }),
     __metadata("design:type", Date)
 ], EmployeeSalary.prototype, "updatedAt", void 0);
+__decorate([
+    (0, sequelize_typescript_1.BelongsTo)(() => employeeManagement_entity_1.Employee),
+    __metadata("design:type", employeeManagement_entity_1.Employee)
+], EmployeeSalary.prototype, "employee", void 0);
 exports.EmployeeSalary = EmployeeSalary = __decorate([
     (0, sequelize_typescript_1.Table)({
         tableName: 'employee_salary_management',

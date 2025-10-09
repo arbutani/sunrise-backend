@@ -31,9 +31,6 @@ export class EmployeeSalary extends Model<EmployeeSalary> {
   })
   employee_id: string;
 
-  @BelongsTo(() => Employee)
-  declare employee: Employee;
-
   @Column({
     type: DataType.NUMBER,
     allowNull: true,
@@ -67,4 +64,7 @@ export class EmployeeSalary extends Model<EmployeeSalary> {
     allowNull: false,
   })
   declare updatedAt: Date;
+
+  @BelongsTo(() => Employee)
+  declare employee: Employee;
 }

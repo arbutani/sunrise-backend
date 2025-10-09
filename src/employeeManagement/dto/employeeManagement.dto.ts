@@ -4,7 +4,6 @@ import moment from 'moment';
 
 export class EmployeeDto {
   id: string;
-
   name: string;
   email_address: string;
   type: any;
@@ -13,6 +12,11 @@ export class EmployeeDto {
   createdAt: string;
   updatedAt: string;
   deletedAt: string;
+  salary?: {
+    monthly_salary: number;
+    working_days: number;
+    working_hour: number;
+  };
 
   constructor(data: any) {
     data = data.dataValues ? data.dataValues : data;
@@ -56,6 +60,15 @@ export class EmployeeDto {
       this.deletedAt = moment(deletedAt, 'YYYY-MM-DD HH:mm:ss').format(
         'DD-MM-YYYY hh:mm A',
       );
+    }
+
+    if (data.salaries && data.salaries.length > 0) {
+      const salary = data.salaries[0];
+      this.salary = {
+        monthly_salary: salary.monthly_salary,
+        working_days: salary.working_days,
+        working_hour: salary.working_hour,
+      };
     }
   }
 }

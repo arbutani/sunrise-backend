@@ -12,7 +12,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.Employee = void 0;
 const sequelize_typescript_1 = require("sequelize-typescript");
 const employeeSalary_entity_1 = require("../../employeeSalaryManagement/entity/employeeSalary.entity");
-const employeeType_enum_1 = require("../../enum/employeeManagement/employeeType.enum");
+const employeeType_enum_1 = require("../../shared/enum/employeeManagement/employeeType.enum");
 let Employee = class Employee extends sequelize_typescript_1.Model {
 };
 exports.Employee = Employee;
@@ -84,7 +84,6 @@ __decorate([
     __metadata("design:type", Date)
 ], Employee.prototype, "updatedAt", void 0);
 __decorate([
-    sequelize_typescript_1.DeletedAt,
     (0, sequelize_typescript_1.Column)({
         field: 'deleted_at',
         type: sequelize_typescript_1.DataType.DATE,

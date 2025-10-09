@@ -12,7 +12,9 @@ import { ErrorMessageService } from 'src/shared/services/errormessage.service';
 import { SuccessResponseDto } from 'src/shared/dto/successResponse.dto';
 import { EmployeeSalaryService } from '../service/employeeSalary.services';
 import { EmployeeSalaryRequestDto } from '../dto/employeeSalaryRequest.dto';
+import { JwtAuthGuard } from 'src/JwtAuthGuard/jwt_auth.guard';
 
+//@UseGuards(JwtAuthGuard)
 @Controller('employee-salary')
 export class EmployeeSalaryController {
   constructor(

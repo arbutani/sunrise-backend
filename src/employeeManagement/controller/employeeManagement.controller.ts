@@ -18,7 +18,7 @@ import { JwtAuthGuard } from 'src/JwtAuthGuard/jwt_auth.guard';
 import { Public } from 'src/JwtAuthGuard/public.decorator';
 import { EmployeePutRequestDto } from '../dto/employeeManagementputRequest.dto';
 
-@UseGuards(JwtAuthGuard)
+//@UseGuards(JwtAuthGuard)
 @Controller('employe-managment')
 export class EmployeeController {
   constructor(

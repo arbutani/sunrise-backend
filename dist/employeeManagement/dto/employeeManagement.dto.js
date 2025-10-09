@@ -15,6 +15,7 @@ class EmployeeDto {
     createdAt;
     updatedAt;
     deletedAt;
+    salary;
     constructor(data) {
         data = data.dataValues ? data.dataValues : data;
         this.id = data.id;
@@ -46,6 +47,14 @@ class EmployeeDto {
         }
         if (deletedAt) {
             this.deletedAt = (0, moment_1.default)(deletedAt, 'YYYY-MM-DD HH:mm:ss').format('DD-MM-YYYY hh:mm A');
+        }
+        if (data.salaries && data.salaries.length > 0) {
+            const salary = data.salaries[0];
+            this.salary = {
+                monthly_salary: salary.monthly_salary,
+                working_days: salary.working_days,
+                working_hour: salary.working_hour,
+            };
         }
     }
 }

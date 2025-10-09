@@ -1,6 +1,14 @@
 /* eslint-disable prettier/prettier */
-import { IsEnum, IsNotEmpty, IsString } from 'class-validator';
-import { EmployeeType } from 'src/enum/employeeManagement/employeeType.enum';
+import { Type } from 'class-transformer';
+import {
+  IsEnum,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  ValidateNested,
+} from 'class-validator';
+import { EmployeeSalaryRequestDto } from 'src/employeeSalaryManagement/dto/employeeSalaryRequest.dto';
+import { EmployeeType } from 'src/shared/enum/employeeManagement/employeeType.enum';
 
 export class EmployeeRequestDto {
   @IsNotEmpty({ message: 'Employee name is required' })
@@ -20,4 +28,9 @@ export class EmployeeRequestDto {
     message: 'Employee type must be one of the allowed values',
   })
   type: EmployeeType;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => EmployeeSalaryRequestDto)
+  salary?: EmployeeSalaryRequestDto;
 }

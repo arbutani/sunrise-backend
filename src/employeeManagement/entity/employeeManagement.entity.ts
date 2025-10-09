@@ -3,7 +3,6 @@ import {
   Column,
   CreatedAt,
   DataType,
-  DeletedAt,
   HasMany,
   Model,
   Table,
@@ -11,7 +10,7 @@ import {
 } from 'sequelize-typescript';
 import { EmployeeSalary } from 'src/employeeSalaryManagement/entity/employeeSalary.entity';
 
-import { EmployeeType } from 'src/enum/employeeManagement/employeeType.enum';
+import { EmployeeType } from 'src/shared/enum/employeeManagement/employeeType.enum';
 
 @Table({
   tableName: 'employee_managment',
@@ -81,7 +80,6 @@ export class Employee extends Model<Employee> {
   })
   declare updatedAt: Date;
 
-  @DeletedAt
   @Column({
     field: 'deleted_at',
     type: DataType.DATE,

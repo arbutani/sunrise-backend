@@ -10,13 +10,16 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.EmployeePutRequestDto = void 0;
+const class_transformer_1 = require("class-transformer");
 const class_validator_1 = require("class-validator");
-const employeeType_enum_1 = require("../../enum/employeeManagement/employeeType.enum");
+const employeeSalaryRequest_dto_1 = require("../../employeeSalaryManagement/dto/employeeSalaryRequest.dto");
+const employeeType_enum_1 = require("../../shared/enum/employeeManagement/employeeType.enum");
 class EmployeePutRequestDto {
     name;
     email_address;
     password;
     type;
+    salary;
 }
 exports.EmployeePutRequestDto = EmployeePutRequestDto;
 __decorate([
@@ -42,4 +45,10 @@ __decorate([
     }),
     __metadata("design:type", String)
 ], EmployeePutRequestDto.prototype, "type", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.ValidateNested)(),
+    (0, class_transformer_1.Type)(() => employeeSalaryRequest_dto_1.EmployeeSalaryRequestDto),
+    __metadata("design:type", employeeSalaryRequest_dto_1.EmployeeSalaryRequestDto)
+], EmployeePutRequestDto.prototype, "salary", void 0);
 //# sourceMappingURL=employeeManagementputRequest.dto.js.map

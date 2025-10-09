@@ -140,28 +140,30 @@ export class EmployeeSalaryService {
   }
 
   async get(id: string, type: string = 'employee_id') {
-    try {
-      let employeeSalary;
+    let employeeSalaries;
 
-      if (type === 'id') {
-        employeeSalary = await this.employeeSalaryRepository.findByPk(id);
-      } else {
-        employeeSalary = await this.employeeSalaryRepository.findOne({
-          where: {
-            employee_id: id,
-          },
-        });
-      }
-
-      if (!employeeSalary) {
+    if (type === 'id') {
+      const salary = await this.employeeSalaryRepository.findByPk(id);
+      if (!salary) {
         throw this.errorMessageService.GeneralErrorCore(
           'Employee salary not found',
           404,
         );
       }
-      return new EmployeeSalaryDto(employeeSalary);
-    } catch (error) {
-      throw this.errorMessageService.CatchHandler(error);
+      return [new EmployeeSalaryDto(salary)];
+    } else {
+      employeeSalaries = await this.employeeSalaryRepository.findAll({
+        where: {
+          employee_id: id,
+        },
+      });
+      if (!employeeSalaries || employeeSalaries.length === 0) {
+        throw this.errorMessageService.GeneralErrorCore(
+          'Employee salary not found',
+          404,
+        );
+      }
+      return employeeSalaries.map((salary) => new EmployeeSalaryDto(salary));
     }
   }
 

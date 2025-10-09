@@ -122,25 +122,24 @@ let EmployeeSalaryService = class EmployeeSalaryService {
         }
     }
     async get(id, type = 'employee_id') {
-        try {
-            let employeeSalary;
-            if (type === 'id') {
-                employeeSalary = await this.employeeSalaryRepository.findByPk(id);
-            }
-            else {
-                employeeSalary = await this.employeeSalaryRepository.findOne({
-                    where: {
-                        employee_id: id,
-                    },
-                });
-            }
-            if (!employeeSalary) {
+        let employeeSalaries;
+        if (type === 'id') {
+            const salary = await this.employeeSalaryRepository.findByPk(id);
+            if (!salary) {
                 throw this.errorMessageService.GeneralErrorCore('Employee salary not found', 404);
             }
-            return new employeeSalary_dto_1.EmployeeSalaryDto(employeeSalary);
+            return [new employeeSalary_dto_1.EmployeeSalaryDto(salary)];
         }
-        catch (error) {
-            throw this.errorMessageService.CatchHandler(error);
+        else {
+            employeeSalaries = await this.employeeSalaryRepository.findAll({
+                where: {
+                    employee_id: id,
+                },
+            });
+            if (!employeeSalaries || employeeSalaries.length === 0) {
+                throw this.errorMessageService.GeneralErrorCore('Employee salary not found', 404);
+            }
+            return employeeSalaries.map((salary) => new employeeSalary_dto_1.EmployeeSalaryDto(salary));
         }
     }
     async deleteEmployeeSalary(id) {
