@@ -140,26 +140,6 @@ let SubcategoriesService = class SubcategoriesService {
             return subcategories.map((subcategories) => new subcategories_dto_1.SubcategoriesDto(subcategories));
         }
     }
-    async deleteSubcategory(id) {
-        try {
-            const subcategory = await this.subcategoriesRepository.findByPk(id);
-            if (!subcategory) {
-                throw this.errorMessageService.GeneralErrorCore('Subcategory not found', 404);
-            }
-            const deleted = await this.subcategoriesRepository.destroy({
-                where: { id: id },
-            });
-            if (deleted) {
-                return { message: 'Subcategory deleted successfully' };
-            }
-            else {
-                throw this.errorMessageService.GeneralErrorCore('Failed to delete subcategory', 200);
-            }
-        }
-        catch (error) {
-            throw this.errorMessageService.CatchHandler(error);
-        }
-    }
     async getAllSubcategories(requestDto) {
         try {
             if (requestDto && Object.keys(requestDto).length > 0) {
@@ -270,6 +250,23 @@ let SubcategoriesService = class SubcategoriesService {
                 query += ` LIMIT 10 OFFSET 0`;
             }
             return { query: query, count_query: countQuery };
+        }
+        catch (error) {
+            throw this.errorMessageService.CatchHandler(error);
+        }
+    }
+    async deleteSubcategory(id) {
+        try {
+            const [updatedRows] = await this.subcategoriesRepository.update({ deletedAt: (0, moment_1.default)().format('YYYY-MM-DD HH:mm:ss') }, {
+                where: {
+                    id: id,
+                    deletedAt: { [sequelize_1.Op.is]: null },
+                },
+            });
+            if (updatedRows === 0) {
+                throw this.errorMessageService.GeneralErrorCore('Subcategory not found', 404);
+            }
+            return { message: 'Subcategory deleted successfully' };
         }
         catch (error) {
             throw this.errorMessageService.CatchHandler(error);

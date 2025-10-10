@@ -137,54 +137,6 @@ export class SubcategoriesService {
     }
   }
 
-  /*async get(id: string, type: string = 'id') {
-    let subcategories;
-
-    if (type === 'id') {
-      const subcategory = await this.subcategoriesRepository.findByPk(id, {
-        include: [
-          {
-            model: Categories,
-            attributes: ['id', 'name'],
-          },
-        ],
-      });
-      if (!subcategory) {
-        throw this.errorMessageService.GeneralErrorCore(
-          'Subcategory not found',
-          404,
-        );
-      }
-      return new SubcategoriesDto(subcategory);
-    } else if (type === 'category_id') {
-      subcategories = await this.subcategoriesRepository.findAll({
-        where: {
-          category_id: id,
-        },
-        include: [
-          {
-            model: Categories,
-            attributes: ['id', 'name'],
-          },
-        ],
-      });
-      if (!subcategories || subcategories.length === 0) {
-        throw this.errorMessageService.GeneralErrorCore(
-          'No subcategories found for this category',
-          404,
-        );
-      }
-      return subcategories.map(
-        (subcategory) => new SubcategoriesDto(subcategory),
-      );
-    } else {
-      throw this.errorMessageService.GeneralErrorCore(
-        'Invalid type parameter',
-        400,
-      );
-    }
-  }*/
-
   async get(id: string, type: string = 'category_id') {
     let subcategories;
 
@@ -212,31 +164,6 @@ export class SubcategoriesService {
       return subcategories.map(
         (subcategories) => new SubcategoriesDto(subcategories),
       );
-    }
-  }
-
-  async deleteSubcategory(id: string) {
-    try {
-      const subcategory = await this.subcategoriesRepository.findByPk(id);
-      if (!subcategory) {
-        throw this.errorMessageService.GeneralErrorCore(
-          'Subcategory not found',
-          404,
-        );
-      }
-      const deleted = await this.subcategoriesRepository.destroy({
-        where: { id: id },
-      });
-      if (deleted) {
-        return { message: 'Subcategory deleted successfully' };
-      } else {
-        throw this.errorMessageService.GeneralErrorCore(
-          'Failed to delete subcategory',
-          200,
-        );
-      }
-    } catch (error) {
-      throw this.errorMessageService.CatchHandler(error);
     }
   }
 
@@ -380,6 +307,31 @@ export class SubcategoriesService {
       }
 
       return { query: query, count_query: countQuery };
+    } catch (error) {
+      throw this.errorMessageService.CatchHandler(error);
+    }
+  }
+
+  async deleteSubcategory(id: string) {
+    try {
+      const [updatedRows] = await this.subcategoriesRepository.update(
+        { deletedAt: moment().format('YYYY-MM-DD HH:mm:ss') } as any,
+        {
+          where: {
+            id: id,
+            deletedAt: { [Op.is]: null },
+          } as any,
+        },
+      );
+
+      if (updatedRows === 0) {
+        throw this.errorMessageService.GeneralErrorCore(
+          'Subcategory not found',
+          404,
+        );
+      }
+
+      return { message: 'Subcategory deleted successfully' };
     } catch (error) {
       throw this.errorMessageService.CatchHandler(error);
     }

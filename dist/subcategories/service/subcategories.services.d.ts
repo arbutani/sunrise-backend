@@ -13,9 +13,6 @@ export declare class SubcategoriesService {
     create(requestDto: SubcategoriesRequestDto): Promise<SubcategoriesDto>;
     update(id: string, requestDto: Partial<SubcategoriesRequestDto>): Promise<SubcategoriesDto>;
     get(id: string, type?: string): Promise<any>;
-    deleteSubcategory(id: string): Promise<{
-        message: string;
-    }>;
     getAllSubcategories(requestDto?: any): Promise<SubcategoriesDto[] | {
         recordsTotal: number;
         recordsFiltered: number;
@@ -24,5 +21,8 @@ export declare class SubcategoriesService {
     queryBuilder(requestDto: any): Promise<{
         query: string;
         count_query: string;
+    }>;
+    deleteSubcategory(id: string): Promise<{
+        message: string;
     }>;
 }
