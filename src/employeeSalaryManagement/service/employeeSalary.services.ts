@@ -153,20 +153,20 @@ export class EmployeeSalaryService {
       return [new EmployeeSalaryDto(salary)];
     } else {
       employeeSalaries = await this.employeeSalaryRepository.findAll({
-        where: {
-          employee_id: id,
-        },
+        where: { employee_id: id },
+        order: [['createdAt', 'DESC']],
       });
+
       if (!employeeSalaries || employeeSalaries.length === 0) {
         throw this.errorMessageService.GeneralErrorCore(
           'Employee salary not found',
           404,
         );
       }
+
       return employeeSalaries.map((salary) => new EmployeeSalaryDto(salary));
     }
   }
-
   async deleteEmployeeSalary(id: string) {
     try {
       const employeeSalary = await this.employeeSalaryRepository.findByPk(id);
@@ -269,9 +269,7 @@ export class EmployeeSalaryService {
       let where = '';
 
       if (requestDto.employee_id && requestDto.employee_id != '') {
-        if (where != '') {
-          where += ` AND `;
-        }
+        if (where != '') where += ` AND `;
         where += ` employee_id='${requestDto.employee_id}' `;
       }
 
@@ -280,9 +278,7 @@ export class EmployeeSalaryService {
         if (search != '') {
           for (const column of requestDto.columns) {
             if (column.searchable != null && column.searchable == 'true') {
-              if (where != '') {
-                where += ` AND `;
-              }
+              if (where != '') where += ` AND `;
               where += ` ${columns[column.data]} ILIKE '%${search}%' `;
             }
           }
@@ -290,10 +286,8 @@ export class EmployeeSalaryService {
       }
 
       if (requestDto.id != null && requestDto.id != '') {
-        if (where != '') {
-          where += ` AND `;
-        }
-        where = " employee_id='" + requestDto.id + "' ";
+        if (where != '') where += ` AND `;
+        where = ` employee_id='${requestDto.id}' `;
       }
 
       let query = `SELECT * FROM employee_salary_management`;
@@ -306,21 +300,16 @@ export class EmployeeSalaryService {
 
       let orderBy = '';
       if (requestDto.order && requestDto.order.length > 0) {
-        for (const order of requestDto.order) {
-          if (orderBy != '') {
-            orderBy += ',';
-          }
-          orderBy += `${order.column} ${order.dir}`;
-        }
         const order = requestDto.order[0];
         orderBy = `${columns[order.column]} ${order.dir}`;
       }
 
-      if (orderBy == '') {
-        orderBy = 'created_at DESC';
+      if (!requestDto.id || requestDto.id === '') {
+        if (orderBy === '') {
+          orderBy = 'created_at DESC';
+        }
+        query += ` ORDER BY ${orderBy}`;
       }
-
-      query += ` ORDER BY ${orderBy}`;
 
       if (requestDto.length && requestDto.start) {
         if (requestDto.length != -1) {

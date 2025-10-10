@@ -258,14 +258,39 @@ export class EmployeeService {
 
   async getEmployee(id: string) {
     try {
-      const employee = await this.employeeRepository.findByPk(id);
+      const employee = await this.employeeRepository.findByPk(id, {
+        include: [
+          {
+            model: EmployeeSalary,
+            required: false,
+          },
+        ],
+        subQuery: false,
+      });
+
       if (!employee) {
         throw this.errorMessageService.GeneralErrorCore(
           'Employee not found',
           404,
         );
       }
-      return new EmployeeDto(employee);
+
+      const employeePlain = employee.get({ plain: true });
+
+      let latestSalary: EmployeeSalary | null = null;
+      if (employeePlain.salaries && employeePlain.salaries.length > 0) {
+        latestSalary = employeePlain.salaries.sort(
+          (a: any, b: any) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+        )[0];
+      }
+
+      const responseData = {
+        ...employeePlain,
+        salary: latestSalary ? latestSalary : null,
+      };
+
+      return new EmployeeDto(responseData);
     } catch (error) {
       throw this.errorMessageService.CatchHandler(error);
     }

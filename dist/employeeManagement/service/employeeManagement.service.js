@@ -56,6 +56,7 @@ const sequelize_1 = require("sequelize");
 const employeeManagement_dto_1 = require("../dto/employeeManagement.dto");
 const bcrypt = __importStar(require("bcrypt"));
 const jwt_1 = require("@nestjs/jwt");
+const employeeSalary_entity_1 = require("../../employeeSalaryManagement/entity/employeeSalary.entity");
 let EmployeeService = class EmployeeService {
     employeeSalaryRepository;
     employeeRepository;
@@ -247,11 +248,28 @@ let EmployeeService = class EmployeeService {
     }
     async getEmployee(id) {
         try {
-            const employee = await this.employeeRepository.findByPk(id);
+            const employee = await this.employeeRepository.findByPk(id, {
+                include: [
+                    {
+                        model: employeeSalary_entity_1.EmployeeSalary,
+                        required: false,
+                    },
+                ],
+                subQuery: false,
+            });
             if (!employee) {
                 throw this.errorMessageService.GeneralErrorCore('Employee not found', 404);
             }
-            return new employeeManagement_dto_1.EmployeeDto(employee);
+            const employeePlain = employee.get({ plain: true });
+            let latestSalary = null;
+            if (employeePlain.salaries && employeePlain.salaries.length > 0) {
+                latestSalary = employeePlain.salaries.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
+            }
+            const responseData = {
+                ...employeePlain,
+                salary: latestSalary ? latestSalary : null,
+            };
+            return new employeeManagement_dto_1.EmployeeDto(responseData);
         }
         catch (error) {
             throw this.errorMessageService.CatchHandler(error);

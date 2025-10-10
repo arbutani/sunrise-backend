@@ -137,7 +137,7 @@ export class SubcategoriesService {
     }
   }
 
-  async get(id: string, type: string = 'id') {
+  /*async get(id: string, type: string = 'id') {
     let subcategories;
 
     if (type === 'id') {
@@ -181,6 +181,36 @@ export class SubcategoriesService {
       throw this.errorMessageService.GeneralErrorCore(
         'Invalid type parameter',
         400,
+      );
+    }
+  }*/
+
+  async get(id: string, type: string = 'category_id') {
+    let subcategories;
+
+    if (type === 'id') {
+      const subcategories = await this.subcategoriesRepository.findByPk(id);
+      if (!subcategories) {
+        throw this.errorMessageService.GeneralErrorCore(
+          'Subcategories not found',
+          404,
+        );
+      }
+      return [new SubcategoriesDto(subcategories)];
+    } else {
+      subcategories = await this.subcategoriesRepository.findAll({
+        where: {
+          category_id: id,
+        },
+      });
+      if (!subcategories || subcategories.length === 0) {
+        throw this.errorMessageService.GeneralErrorCore(
+          'Subcategories not found',
+          404,
+        );
+      }
+      return subcategories.map(
+        (subcategories) => new SubcategoriesDto(subcategories),
       );
     }
   }

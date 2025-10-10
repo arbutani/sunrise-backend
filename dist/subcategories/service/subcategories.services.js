@@ -119,41 +119,25 @@ let SubcategoriesService = class SubcategoriesService {
             throw this.errorMessageService.CatchHandler(error);
         }
     }
-    async get(id, type = 'id') {
+    async get(id, type = 'category_id') {
         let subcategories;
         if (type === 'id') {
-            const subcategory = await this.subcategoriesRepository.findByPk(id, {
-                include: [
-                    {
-                        model: categories_entity_1.Categories,
-                        attributes: ['id', 'name'],
-                    },
-                ],
-            });
-            if (!subcategory) {
-                throw this.errorMessageService.GeneralErrorCore('Subcategory not found', 404);
+            const subcategories = await this.subcategoriesRepository.findByPk(id);
+            if (!subcategories) {
+                throw this.errorMessageService.GeneralErrorCore('Subcategories not found', 404);
             }
-            return new subcategories_dto_1.SubcategoriesDto(subcategory);
+            return [new subcategories_dto_1.SubcategoriesDto(subcategories)];
         }
-        else if (type === 'category_id') {
+        else {
             subcategories = await this.subcategoriesRepository.findAll({
                 where: {
                     category_id: id,
                 },
-                include: [
-                    {
-                        model: categories_entity_1.Categories,
-                        attributes: ['id', 'name'],
-                    },
-                ],
             });
             if (!subcategories || subcategories.length === 0) {
-                throw this.errorMessageService.GeneralErrorCore('No subcategories found for this category', 404);
+                throw this.errorMessageService.GeneralErrorCore('Subcategories not found', 404);
             }
-            return subcategories.map((subcategory) => new subcategories_dto_1.SubcategoriesDto(subcategory));
-        }
-        else {
-            throw this.errorMessageService.GeneralErrorCore('Invalid type parameter', 400);
+            return subcategories.map((subcategories) => new subcategories_dto_1.SubcategoriesDto(subcategories));
         }
     }
     async deleteSubcategory(id) {

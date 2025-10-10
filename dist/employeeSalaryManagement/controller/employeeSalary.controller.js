@@ -17,6 +17,7 @@ const common_1 = require("@nestjs/common");
 const errormessage_service_1 = require("../../shared/services/errormessage.service");
 const employeeSalary_services_1 = require("../service/employeeSalary.services");
 const employeeSalaryRequest_dto_1 = require("../dto/employeeSalaryRequest.dto");
+const jwt_auth_guard_1 = require("../../JwtAuthGuard/jwt_auth.guard");
 let EmployeeSalaryController = class EmployeeSalaryController {
     employeeSalaryService;
     errorMessageService;
@@ -107,6 +108,7 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], EmployeeSalaryController.prototype, "getAllEmployeeSalaries", null);
 exports.EmployeeSalaryController = EmployeeSalaryController = __decorate([
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     (0, common_1.Controller)('employee-salary'),
     __metadata("design:paramtypes", [employeeSalary_services_1.EmployeeSalaryService,
         errormessage_service_1.ErrorMessageService])
