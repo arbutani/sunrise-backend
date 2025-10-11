@@ -16,10 +16,10 @@ import { EmployeeRequestDto } from '../dto/employeeManagementRequest.dto';
 import { EmployeeService } from '../service/employeeManagement.service';
 import { JwtAuthGuard } from 'src/JwtAuthGuard/jwt_auth.guard';
 import { Public } from 'src/JwtAuthGuard/public.decorator';
-import { EmployeePutRequestDto } from '../dto/employeeManagementputRequest.dto';
+import { EmployeePutRequestDto } from '../dto/employeeManagementPutRequest.dto';
 
 @UseGuards(JwtAuthGuard)
-@Controller('employe-managment')
+@Controller('employee-management')
 export class EmployeeController {
   constructor(
     private readonly employeeService: EmployeeService,
@@ -31,10 +31,10 @@ export class EmployeeController {
     @Body() requestDto: EmployeeRequestDto,
   ): Promise<SuccessResponseDto> {
     try {
-      const employee_managment =
+      const employee_management =
         await this.employeeService.createEmployee(requestDto);
       return this.errorMessageService.success(
-        employee_managment,
+        employee_management,
         true,
         'Employee created successfully',
         {},
@@ -68,12 +68,12 @@ export class EmployeeController {
     @Body() requestDto: EmployeePutRequestDto,
   ): Promise<SuccessResponseDto> {
     try {
-      const employee_managment = await this.employeeService.updateEmployee(
+      const employee_management = await this.employeeService.updateEmployee(
         id,
         requestDto,
       );
       return this.errorMessageService.success(
-        employee_managment,
+        employee_management,
         true,
         'Employee updated successfully',
         {},
@@ -86,9 +86,9 @@ export class EmployeeController {
   @Get(':id')
   async getEmployee(@Param('id') id: string): Promise<SuccessResponseDto> {
     try {
-      const employee_managment = await this.employeeService.getEmployee(id);
+      const employee_management = await this.employeeService.getEmployee(id);
       return this.errorMessageService.success(
-        employee_managment,
+        employee_management,
         true,
         'Employee retrieved successfully',
         {},
@@ -108,9 +108,9 @@ export class EmployeeController {
   @Delete(':id')
   async deleteEmployee(@Param('id') id: string): Promise<SuccessResponseDto> {
     try {
-      const employee_managment = await this.employeeService.deleteEmployee(id);
+      const employee_management = await this.employeeService.deleteEmployee(id);
       return this.errorMessageService.success(
-        employee_managment,
+        employee_management,
         true,
         'Employee deleted successfully',
         {},

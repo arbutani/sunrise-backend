@@ -19,7 +19,7 @@ const employeeManagementRequest_dto_1 = require("../dto/employeeManagementReques
 const employeeManagement_service_1 = require("../service/employeeManagement.service");
 const jwt_auth_guard_1 = require("../../JwtAuthGuard/jwt_auth.guard");
 const public_decorator_1 = require("../../JwtAuthGuard/public.decorator");
-const employeeManagementputRequest_dto_1 = require("../dto/employeeManagementputRequest.dto");
+const employeeManagementPutRequest_dto_1 = require("../dto/employeeManagementPutRequest.dto");
 let EmployeeController = class EmployeeController {
     employeeService;
     errorMessageService;
@@ -29,8 +29,8 @@ let EmployeeController = class EmployeeController {
     }
     async createEmployee(requestDto) {
         try {
-            const employee_managment = await this.employeeService.createEmployee(requestDto);
-            return this.errorMessageService.success(employee_managment, true, 'Employee created successfully', {});
+            const employee_management = await this.employeeService.createEmployee(requestDto);
+            return this.errorMessageService.success(employee_management, true, 'Employee created successfully', {});
         }
         catch (error) {
             throw this.errorMessageService.error(error);
@@ -47,8 +47,8 @@ let EmployeeController = class EmployeeController {
     }
     async updateEmployee(id, requestDto) {
         try {
-            const employee_managment = await this.employeeService.updateEmployee(id, requestDto);
-            return this.errorMessageService.success(employee_managment, true, 'Employee updated successfully', {});
+            const employee_management = await this.employeeService.updateEmployee(id, requestDto);
+            return this.errorMessageService.success(employee_management, true, 'Employee updated successfully', {});
         }
         catch (error) {
             throw this.errorMessageService.error(error);
@@ -56,8 +56,8 @@ let EmployeeController = class EmployeeController {
     }
     async getEmployee(id) {
         try {
-            const employee_managment = await this.employeeService.getEmployee(id);
-            return this.errorMessageService.success(employee_managment, true, 'Employee retrieved successfully', {});
+            const employee_management = await this.employeeService.getEmployee(id);
+            return this.errorMessageService.success(employee_management, true, 'Employee retrieved successfully', {});
         }
         catch (error) {
             throw this.errorMessageService.error(error);
@@ -73,8 +73,8 @@ let EmployeeController = class EmployeeController {
     }
     async deleteEmployee(id) {
         try {
-            const employee_managment = await this.employeeService.deleteEmployee(id);
-            return this.errorMessageService.success(employee_managment, true, 'Employee deleted successfully', {});
+            const employee_management = await this.employeeService.deleteEmployee(id);
+            return this.errorMessageService.success(employee_management, true, 'Employee deleted successfully', {});
         }
         catch (error) {
             throw this.errorMessageService.error(error);
@@ -102,7 +102,7 @@ __decorate([
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, employeeManagementputRequest_dto_1.EmployeePutRequestDto]),
+    __metadata("design:paramtypes", [String, employeeManagementPutRequest_dto_1.EmployeePutRequestDto]),
     __metadata("design:returntype", Promise)
 ], EmployeeController.prototype, "updateEmployee", null);
 __decorate([
@@ -128,7 +128,7 @@ __decorate([
 ], EmployeeController.prototype, "deleteEmployee", null);
 exports.EmployeeController = EmployeeController = __decorate([
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
-    (0, common_1.Controller)('employe-managment'),
+    (0, common_1.Controller)('employee-management'),
     __metadata("design:paramtypes", [employeeManagement_service_1.EmployeeService,
         errormessage_service_1.ErrorMessageService])
 ], EmployeeController);

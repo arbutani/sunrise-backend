@@ -5,7 +5,7 @@ import { EmployeeRequestDto } from '../dto/employeeManagementRequest.dto';
 import { EmployeeDto } from '../dto/employeeManagement.dto';
 import { JwtService } from '@nestjs/jwt';
 import { EmployeeSalary } from 'src/employeeSalaryManagement/entity/employeeSalary.entity';
-import { EmployeePutRequestDto } from '../dto/employeeManagementputRequest.dto';
+import { EmployeePutRequestDto } from '../dto/employeeManagementPutRequest.dto';
 export declare class EmployeeService {
     private readonly employeeSalaryRepository;
     private readonly employeeRepository;

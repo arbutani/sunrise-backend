@@ -5,6 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.EmployeeDto = void 0;
 const moment_1 = __importDefault(require("moment"));
+const employeeSalary_dto_1 = require("../../employeeSalaryManagement/dto/employeeSalary.dto");
 class EmployeeDto {
     id;
     name;
@@ -48,13 +49,8 @@ class EmployeeDto {
         if (deletedAt) {
             this.deletedAt = (0, moment_1.default)(deletedAt, 'YYYY-MM-DD HH:mm:ss').format('DD-MM-YYYY hh:mm A');
         }
-        if (data.salaries && data.salaries.length > 0) {
-            const salary = data.salaries[0];
-            this.salary = {
-                monthly_salary: salary.monthly_salary,
-                working_days: salary.working_days,
-                working_hour: salary.working_hour,
-            };
+        if (data.salary) {
+            this.salary = new employeeSalary_dto_1.EmployeeSalaryDto(data.salary);
         }
     }
 }

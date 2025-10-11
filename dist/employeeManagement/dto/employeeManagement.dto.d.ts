@@ -1,3 +1,4 @@
+import { EmployeeSalaryDto } from 'src/employeeSalaryManagement/dto/employeeSalary.dto';
 export declare class EmployeeDto {
     id: string;
     name: string;
@@ -8,10 +9,6 @@ export declare class EmployeeDto {
     createdAt: string;
     updatedAt: string;
     deletedAt: string;
-    salary?: {
-        monthly_salary: number;
-        working_days: number;
-        working_hour: number;
-    };
+    salary?: EmployeeSalaryDto;
     constructor(data: any);
 }

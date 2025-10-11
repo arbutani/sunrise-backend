@@ -1,6 +1,7 @@
 /* eslint-disable prettier/prettier */
 
 import moment from 'moment';
+import { EmployeeSalaryDto } from 'src/employeeSalaryManagement/dto/employeeSalary.dto';
 
 export class EmployeeDto {
   id: string;
@@ -12,11 +13,7 @@ export class EmployeeDto {
   createdAt: string;
   updatedAt: string;
   deletedAt: string;
-  salary?: {
-    monthly_salary: number;
-    working_days: number;
-    working_hour: number;
-  };
+  salary?: EmployeeSalaryDto;
 
   constructor(data: any) {
     data = data.dataValues ? data.dataValues : data;
@@ -62,13 +59,8 @@ export class EmployeeDto {
       );
     }
 
-    if (data.salaries && data.salaries.length > 0) {
-      const salary = data.salaries[0];
-      this.salary = {
-        monthly_salary: salary.monthly_salary,
-        working_days: salary.working_days,
-        working_hour: salary.working_hour,
-      };
+    if (data.salary) {
+      this.salary = new EmployeeSalaryDto(data.salary);
     }
   }
 }

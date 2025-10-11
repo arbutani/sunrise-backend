@@ -2,7 +2,7 @@ import { ErrorMessageService } from 'src/shared/services/errormessage.service';
 import { SuccessResponseDto } from 'src/shared/dto/successResponse.dto';
 import { EmployeeRequestDto } from '../dto/employeeManagementRequest.dto';
 import { EmployeeService } from '../service/employeeManagement.service';
-import { EmployeePutRequestDto } from '../dto/employeeManagementputRequest.dto';
+import { EmployeePutRequestDto } from '../dto/employeeManagementPutRequest.dto';
 export declare class EmployeeController {
     private readonly employeeService;
     private readonly errorMessageService;

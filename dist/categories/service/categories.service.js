@@ -33,13 +33,16 @@ let CategoriesService = class CategoriesService {
         this.errorMessageService = errorMessageService;
     }
     async createCategory(requestDto) {
-        const transaction = await this.sequelize.transaction();
+        const transaction = await this.sequelize.transaction({
+            isolationLevel: sequelize_1.Transaction.ISOLATION_LEVELS.REPEATABLE_READ,
+        });
+        let status = false;
         try {
             const existingCategory = await this.categoriesRepository.findOne({
                 where: { name: requestDto.name },
+                transaction: transaction,
             });
             if (existingCategory) {
-                await transaction.rollback();
                 throw this.errorMessageService.GeneralErrorCore('Category with this name already exists', 200);
             }
             const categoryFields = {
@@ -52,6 +55,7 @@ let CategoriesService = class CategoriesService {
                 transaction,
             });
             await transaction.commit();
+            status = true;
             const newCategory = await this.categoriesRepository.findByPk(category.id);
             if (!newCategory) {
                 throw this.errorMessageService.GeneralErrorCore('Failed to fetch created category', 500);
@@ -59,16 +63,22 @@ let CategoriesService = class CategoriesService {
             return new categories_dto_1.CategoriesDto(newCategory);
         }
         catch (error) {
-            await transaction.rollback().catch(() => { });
+            if (status == false) {
+                await transaction.rollback().catch(() => { });
+            }
             throw this.errorMessageService.CatchHandler(error);
         }
     }
     async updateCategory(id, requestDto) {
-        const transaction = await this.sequelize.transaction();
+        const transaction = await this.sequelize.transaction({
+            isolationLevel: sequelize_1.Transaction.ISOLATION_LEVELS.REPEATABLE_READ,
+        });
+        let status = false;
         try {
-            const oldCategory = await this.categoriesRepository.findByPk(id);
+            const oldCategory = await this.categoriesRepository.findByPk(id, {
+                transaction: transaction,
+            });
             if (!oldCategory) {
-                await transaction.rollback();
                 throw this.errorMessageService.GeneralErrorCore('Category not found', 404);
             }
             if (requestDto.name !== oldCategory.name) {
@@ -77,9 +87,9 @@ let CategoriesService = class CategoriesService {
                         name: requestDto.name,
                         id: { [sequelize_1.Op.ne]: id },
                     },
+                    transaction: transaction,
                 });
                 if (findCategory) {
-                    await transaction.rollback();
                     throw this.errorMessageService.GeneralErrorCore('Category with this name already exists', 200);
                 }
             }
@@ -89,10 +99,10 @@ let CategoriesService = class CategoriesService {
             };
             const [updatedCount] = await this.categoriesRepository.update(categoryFields, { where: { id }, transaction });
             if (updatedCount === 0) {
-                await transaction.rollback();
                 throw this.errorMessageService.GeneralErrorCore('Failed to update category', 200);
             }
             await transaction.commit();
+            status = true;
             const updatedCategory = await this.categoriesRepository.findByPk(id);
             if (!updatedCategory) {
                 throw this.errorMessageService.GeneralErrorCore('Failed to fetch updated category', 500);
@@ -100,11 +110,17 @@ let CategoriesService = class CategoriesService {
             return new categories_dto_1.CategoriesDto(updatedCategory);
         }
         catch (error) {
-            await transaction.rollback().catch(() => { });
+            if (status == false) {
+                await transaction.rollback().catch(() => { });
+            }
             throw this.errorMessageService.CatchHandler(error);
         }
     }
     async getCategory(id) {
+        const transaction = await this.sequelize.transaction({
+            isolationLevel: sequelize_1.Transaction.ISOLATION_LEVELS.REPEATABLE_READ,
+        });
+        let status = false;
         try {
             const category = await this.categoriesRepository.findByPk(id, {
                 include: [
@@ -114,17 +130,27 @@ let CategoriesService = class CategoriesService {
                         required: false,
                     },
                 ],
+                transaction: transaction,
             });
             if (!category) {
                 throw this.errorMessageService.GeneralErrorCore('Category not found', 404);
             }
+            await transaction.commit();
+            status = true;
             return new categories_dto_1.CategoriesDto(category);
         }
         catch (error) {
+            if (status == false) {
+                await transaction.rollback().catch(() => { });
+            }
             throw this.errorMessageService.CatchHandler(error);
         }
     }
     async queryBuilder(requestDto) {
+        const transaction = await this.sequelize.transaction({
+            isolationLevel: sequelize_1.Transaction.ISOLATION_LEVELS.REPEATABLE_READ,
+        });
+        let status = false;
         try {
             const columns = ['id', 'name', 'createdAt'];
             let where = 'deleted_at IS NULL';
@@ -176,22 +202,33 @@ let CategoriesService = class CategoriesService {
             else {
                 query += ` LIMIT 10 OFFSET 0`;
             }
+            await transaction.commit();
+            status = true;
             return { query: query, count_query: countQuery };
         }
         catch (error) {
+            if (status == false) {
+                await transaction.rollback().catch(() => { });
+            }
             throw this.errorMessageService.CatchHandler(error);
         }
     }
     async getAllCategories(requestDto) {
+        const transaction = await this.sequelize.transaction({
+            isolationLevel: sequelize_1.Transaction.ISOLATION_LEVELS.REPEATABLE_READ,
+        });
+        let status = false;
         try {
             if (requestDto && Object.keys(requestDto).length > 0) {
                 const { query, count_query } = await this.queryBuilder(requestDto);
-                const [count, count_metadata] = await this.sequelize.query(count_query, {
+                const [count] = await this.sequelize.query(count_query, {
                     raw: true,
+                    transaction: transaction,
                 });
                 const countRows = count;
-                const [results, metadata] = await this.sequelize.query(query, {
+                const [results] = await this.sequelize.query(query, {
                     raw: true,
+                    transaction: transaction,
                 });
                 const listData = await Promise.all(results.map(async (category) => {
                     if (category['created_at']) {
@@ -202,6 +239,8 @@ let CategoriesService = class CategoriesService {
                     }
                     return category;
                 }));
+                await transaction.commit();
+                status = true;
                 return {
                     recordsTotal: Number(countRows.length > 0 && countRows[0]['count'] != ''
                         ? countRows[0]['count']
@@ -222,31 +261,47 @@ let CategoriesService = class CategoriesService {
                             required: false,
                         },
                     ],
+                    transaction: transaction,
                 });
                 if (!categories || categories.length === 0) {
                     throw this.errorMessageService.GeneralErrorCore('No categories found', 404);
                 }
+                await transaction.commit();
+                status = true;
                 return categories.map((category) => new categories_dto_1.CategoriesDto(category));
             }
         }
         catch (error) {
+            if (status == false) {
+                await transaction.rollback().catch(() => { });
+            }
             throw this.errorMessageService.CatchHandler(error);
         }
     }
     async deleteCategory(id) {
+        const transaction = await this.sequelize.transaction({
+            isolationLevel: sequelize_1.Transaction.ISOLATION_LEVELS.REPEATABLE_READ,
+        });
+        let status = false;
         try {
             const [updatedRows] = await this.categoriesRepository.update({ deletedAt: (0, moment_1.default)().format('YYYY-MM-DD HH:mm:ss') }, {
                 where: {
                     id: id,
                     deletedAt: { [sequelize_1.Op.is]: null },
                 },
+                transaction: transaction,
             });
             if (updatedRows === 0) {
                 throw this.errorMessageService.GeneralErrorCore('Category not found', 404);
             }
+            await transaction.commit();
+            status = true;
             return { message: 'Category deleted successfully' };
         }
         catch (error) {
+            if (status == false) {
+                await transaction.rollback().catch(() => { });
+            }
             throw this.errorMessageService.CatchHandler(error);
         }
     }

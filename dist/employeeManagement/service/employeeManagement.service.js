@@ -71,13 +71,16 @@ let EmployeeService = class EmployeeService {
         this.jwtService = jwtService;
     }
     async createEmployee(requestDto) {
-        const transaction = await this.sequelize.transaction();
+        const transaction = await this.sequelize.transaction({
+            isolationLevel: sequelize_1.Transaction.ISOLATION_LEVELS.REPEATABLE_READ,
+        });
+        let status = false;
         try {
             const existingEmployee = await this.employeeRepository.findOne({
                 where: { email_address: requestDto.email_address },
+                transaction: transaction,
             });
             if (existingEmployee) {
-                await transaction.rollback();
                 throw this.errorMessageService.GeneralErrorCore('Employee with this email address already exists', 200);
             }
             const lastEmployee = await this.employeeRepository.findOne({
@@ -107,45 +110,49 @@ let EmployeeService = class EmployeeService {
                 updatedAt: (0, moment_1.default)().format('YYYY-MM-DD HH:mm:ss'),
                 deletedAt: null,
             };
-            const employee = await this.employeeRepository.create(employeeFields, {
+            let employee = await this.employeeRepository.create(employeeFields, {
                 transaction,
             });
-            if (requestDto.salary) {
-                const salaryData = {
-                    employee_id: employee.id,
-                    monthly_salary: requestDto.salary.monthly_salary,
-                    working_days: requestDto.salary.working_days,
-                    working_hour: requestDto.salary.working_hour,
-                    createdAt: (0, moment_1.default)().format('YYYY-MM-DD HH:mm:ss'),
-                    updatedAt: (0, moment_1.default)().format('YYYY-MM-DD HH:mm:ss'),
-                };
-                await this.employeeSalaryRepository.create(salaryData, {
-                    transaction,
-                });
+            if (employee) {
+                employee = employee.dataValues ? employee.dataValues : employee;
+                if (requestDto.salary) {
+                    const salaryData = {
+                        employee_id: employee.id,
+                        monthly_salary: requestDto.salary.monthly_salary,
+                        working_days: requestDto.salary.working_days,
+                        working_hour: requestDto.salary.working_hour,
+                        createdAt: (0, moment_1.default)().format('YYYY-MM-DD HH:mm:ss'),
+                        updatedAt: (0, moment_1.default)().format('YYYY-MM-DD HH:mm:ss'),
+                    };
+                    const salary = await this.employeeSalaryRepository.create(salaryData, {
+                        transaction,
+                    });
+                    employee['salary'] = salary;
+                }
+                await transaction.commit();
+                status = true;
+                return new employeeManagement_dto_1.EmployeeDto(employee);
             }
-            await transaction.commit();
-            const newEmployee = await this.employeeRepository.findByPk(employee.id);
-            const employeeSalary = await this.employeeSalaryRepository.findOne({
-                where: { employee_id: employee.id },
-            });
-            if (!newEmployee) {
-                throw this.errorMessageService.GeneralErrorCore('Failed to fetch created employee', 500);
+            else {
+                throw this.errorMessageService.GeneralErrorCore('Unable to create employee', 500);
             }
-            const responseData = {
-                ...newEmployee.toJSON(),
-                salaries: employeeSalary ? [employeeSalary.toJSON()] : [],
-            };
-            return new employeeManagement_dto_1.EmployeeDto(responseData);
         }
         catch (error) {
-            await transaction.rollback().catch(() => { });
+            if (status == false) {
+                await transaction.rollback().catch(() => { });
+            }
             throw this.errorMessageService.CatchHandler(error);
         }
     }
     async login(email, password) {
+        const transaction = await this.sequelize.transaction({
+            isolationLevel: sequelize_1.Transaction.ISOLATION_LEVELS.REPEATABLE_READ,
+        });
+        let status = false;
         try {
             const employee = await this.employeeRepository.findOne({
                 where: { email_address: email },
+                transaction: transaction,
             });
             if (!employee) {
                 throw new common_1.UnauthorizedException('Invalid credentials');
@@ -162,8 +169,10 @@ let EmployeeService = class EmployeeService {
             };
             const token = await this.jwtService.signAsync(payload, {
                 secret: 'MY_SECRET_KEY',
-                expiresIn: '1h',
+                expiresIn: '5s',
             });
+            await transaction.commit();
+            status = true;
             return {
                 access_token: token,
                 employee: new employeeManagement_dto_1.EmployeeDto(employee),
@@ -171,15 +180,22 @@ let EmployeeService = class EmployeeService {
             };
         }
         catch (error) {
+            if (status == false) {
+                await transaction.rollback().catch(() => { });
+            }
             throw this.errorMessageService.CatchHandler(error);
         }
     }
     async updateEmployee(id, requestDto) {
-        const transaction = await this.sequelize.transaction();
+        const transaction = await this.sequelize.transaction({
+            isolationLevel: sequelize_1.Transaction.ISOLATION_LEVELS.REPEATABLE_READ,
+        });
+        let status = false;
         try {
-            const oldEmployee = await this.employeeRepository.findByPk(id);
+            const oldEmployee = await this.employeeRepository.findByPk(id, {
+                transaction: transaction,
+            });
             if (!oldEmployee) {
-                await transaction.rollback();
                 throw this.errorMessageService.GeneralErrorCore('Employee not found', 404);
             }
             if (requestDto.email_address !== oldEmployee.email_address) {
@@ -188,9 +204,9 @@ let EmployeeService = class EmployeeService {
                         email_address: requestDto.email_address,
                         id: { [sequelize_1.Op.ne]: id },
                     },
+                    transaction: transaction,
                 });
                 if (findEmployee) {
-                    await transaction.rollback();
                     throw this.errorMessageService.GeneralErrorCore('Employee with this email address already exists', 200);
                 }
             }
@@ -204,9 +220,8 @@ let EmployeeService = class EmployeeService {
                 password: hashedPassword,
                 updatedAt: (0, moment_1.default)().format('YYYY-MM-DD HH:mm:ss'),
             };
-            const [updatedCount] = await this.employeeRepository.update(employeeFields, { where: { id }, transaction });
-            if (updatedCount === 0) {
-                await transaction.rollback();
+            const updatedCount = await this.employeeRepository.update(employeeFields, { where: { id }, transaction, returning: true });
+            if (updatedCount == null) {
                 throw this.errorMessageService.GeneralErrorCore('Failed to update employee', 200);
             }
             if (requestDto.salary) {
@@ -223,6 +238,7 @@ let EmployeeService = class EmployeeService {
                 });
             }
             await transaction.commit();
+            status = true;
             const updatedEmployee = await this.employeeRepository.findByPk(id);
             const employeeSalary = await this.employeeSalaryRepository.findOne({
                 where: { employee_id: id },
@@ -242,11 +258,17 @@ let EmployeeService = class EmployeeService {
             return new employeeManagement_dto_1.EmployeeDto(responseData);
         }
         catch (error) {
-            await transaction.rollback().catch(() => { });
+            if (status == false) {
+                await transaction.rollback().catch(() => { });
+            }
             throw this.errorMessageService.CatchHandler(error);
         }
     }
     async getEmployee(id) {
+        const transaction = await this.sequelize.transaction({
+            isolationLevel: sequelize_1.Transaction.ISOLATION_LEVELS.REPEATABLE_READ,
+        });
+        let status = false;
         try {
             const employee = await this.employeeRepository.findByPk(id, {
                 include: [
@@ -256,6 +278,7 @@ let EmployeeService = class EmployeeService {
                     },
                 ],
                 subQuery: false,
+                transaction: transaction,
             });
             if (!employee) {
                 throw this.errorMessageService.GeneralErrorCore('Employee not found', 404);
@@ -269,13 +292,22 @@ let EmployeeService = class EmployeeService {
                 ...employeePlain,
                 salary: latestSalary ? latestSalary : null,
             };
+            await transaction.commit();
+            status = true;
             return new employeeManagement_dto_1.EmployeeDto(responseData);
         }
         catch (error) {
+            if (status == false) {
+                await transaction.rollback().catch(() => { });
+            }
             throw this.errorMessageService.CatchHandler(error);
         }
     }
     async queryBuilder(requestDto) {
+        const transaction = await this.sequelize.transaction({
+            isolationLevel: sequelize_1.Transaction.ISOLATION_LEVELS.REPEATABLE_READ,
+        });
+        let status = false;
         try {
             const columns = [
                 'id',
@@ -340,22 +372,33 @@ let EmployeeService = class EmployeeService {
             else {
                 query += ` LIMIT 10 OFFSET 0`;
             }
+            await transaction.commit();
+            status = true;
             return { query: query, count_query: countQuery };
         }
         catch (error) {
+            if (status == false) {
+                await transaction.rollback().catch(() => { });
+            }
             throw this.errorMessageService.CatchHandler(error);
         }
     }
     async getAllEmployees(requestDto) {
+        const transaction = await this.sequelize.transaction({
+            isolationLevel: sequelize_1.Transaction.ISOLATION_LEVELS.REPEATABLE_READ,
+        });
+        let status = false;
         try {
             if (requestDto && Object.keys(requestDto).length > 0) {
                 const { query, count_query } = await this.queryBuilder(requestDto);
                 const [count, count_metadata] = await this.sequelize.query(count_query, {
                     raw: true,
+                    transaction: transaction,
                 });
                 const countRows = count;
                 const [results, metadata] = await this.sequelize.query(query, {
                     raw: true,
+                    transaction: transaction,
                 });
                 const listData = await Promise.all(results.map(async (employee) => {
                     if (employee['createdAt']) {
@@ -369,6 +412,8 @@ let EmployeeService = class EmployeeService {
                     }
                     return employee;
                 }));
+                await transaction.commit();
+                status = true;
                 return {
                     recordsTotal: Number(countRows.length > 0 && countRows[0]['count'] != ''
                         ? countRows[0]['count']
@@ -380,31 +425,47 @@ let EmployeeService = class EmployeeService {
             else {
                 const employees = await this.employeeRepository.findAll({
                     where: (0, sequelize_1.literal)('deleted_at IS NULL'),
+                    transaction: transaction,
                 });
                 if (!employees || employees.length === 0) {
                     throw this.errorMessageService.GeneralErrorCore('No employees found', 404);
                 }
+                await transaction.commit();
+                status = true;
                 return employees.map((employee) => new employeeManagement_dto_1.EmployeeDto(employee));
             }
         }
         catch (error) {
+            if (status == false) {
+                await transaction.rollback().catch(() => { });
+            }
             throw this.errorMessageService.CatchHandler(error);
         }
     }
     async deleteEmployee(id) {
+        const transaction = await this.sequelize.transaction({
+            isolationLevel: sequelize_1.Transaction.ISOLATION_LEVELS.REPEATABLE_READ,
+        });
+        let status = false;
         try {
             const [updatedRows] = await this.employeeRepository.update({ deletedAt: (0, moment_1.default)().format('YYYY-MM-DD HH:mm:ss') }, {
                 where: {
                     id: id,
                     deletedAt: { [sequelize_1.Op.is]: null },
                 },
+                transaction: transaction,
             });
             if (updatedRows === 0) {
                 throw this.errorMessageService.GeneralErrorCore('Employee not found', 404);
             }
+            await transaction.commit();
+            status = true;
             return { message: 'Employee deleted successfully' };
         }
         catch (error) {
+            if (status == false) {
+                await transaction.rollback().catch(() => { });
+            }
             throw this.errorMessageService.CatchHandler(error);
         }
     }
