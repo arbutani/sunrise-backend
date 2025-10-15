@@ -16,6 +16,7 @@ exports.SubcategoriesController = void 0;
 const common_1 = require("@nestjs/common");
 const errormessage_service_1 = require("../../shared/services/errormessage.service");
 const subcategories_services_1 = require("../service/subcategories.services");
+const jwt_auth_guard_1 = require("../../JwtAuthGuard/jwt_auth.guard");
 const subcategoriesRequest_dto_1 = require("../dto/subcategoriesRequest.dto");
 let SubcategoriesController = class SubcategoriesController {
     subcategoriesService;
@@ -107,6 +108,7 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], SubcategoriesController.prototype, "deleteSubcategory", null);
 exports.SubcategoriesController = SubcategoriesController = __decorate([
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     (0, common_1.Controller)('subcategories'),
     __metadata("design:paramtypes", [subcategories_services_1.SubcategoriesService,
         errormessage_service_1.ErrorMessageService])

@@ -15,6 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.CategoriesController = void 0;
 const common_1 = require("@nestjs/common");
 const errormessage_service_1 = require("../../shared/services/errormessage.service");
+const jwt_auth_guard_1 = require("../../JwtAuthGuard/jwt_auth.guard");
 const categories_service_1 = require("../service/categories.service");
 const categoriesRequest_dto_1 = require("../dto/categoriesRequest.dto");
 let CategoriesController = class CategoriesController {
@@ -107,6 +108,7 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], CategoriesController.prototype, "deleteCategory", null);
 exports.CategoriesController = CategoriesController = __decorate([
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     (0, common_1.Controller)('categories'),
     __metadata("design:paramtypes", [categories_service_1.CategoriesService,
         errormessage_service_1.ErrorMessageService])

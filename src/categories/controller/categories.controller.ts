@@ -16,7 +16,7 @@ import { JwtAuthGuard } from 'src/JwtAuthGuard/jwt_auth.guard';
 import { CategoriesService } from '../service/categories.service';
 import { CategoriesRequestDto } from '../dto/categoriesRequest.dto';
 
-//@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard)
 @Controller('categories')
 export class CategoriesController {
   constructor(

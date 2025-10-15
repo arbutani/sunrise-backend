@@ -16,7 +16,7 @@ import { SubcategoriesService } from '../service/subcategories.services';
 import { JwtAuthGuard } from 'src/JwtAuthGuard/jwt_auth.guard';
 import { SubcategoriesRequestDto } from '../dto/subcategoriesRequest.dto';
 
-//@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard)
 @Controller('subcategories')
 export class SubcategoriesController {
   constructor(
