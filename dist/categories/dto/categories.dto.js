@@ -5,12 +5,14 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CategoriesDto = void 0;
 const moment_1 = __importDefault(require("moment"));
+const subcategories_dto_1 = require("../../subcategories/dto/subcategories.dto");
 class CategoriesDto {
     id;
     name;
     createdAt;
     updatedAt;
     deletedAt;
+    subcategories;
     constructor(data) {
         data = data.dataValues ? data.dataValues : data;
         this.id = data.id;
@@ -38,6 +40,9 @@ class CategoriesDto {
         }
         if (deletedAt) {
             this.deletedAt = (0, moment_1.default)(deletedAt, 'YYYY-MM-DD HH:mm:ss').format('DD-MM-YYYY hh:mm A');
+            if (data.subcategories) {
+                this.subcategories = new subcategories_dto_1.SubcategoriesDto(data.subcategories);
+            }
         }
     }
 }

@@ -62,17 +62,16 @@ export class SubcategoriesController {
     }
   }
 
-  @Get(':id')
-  async getSubcategory(
-    @Param('id') id: string,
-    @Query('type') type: string = 'id',
+  @Get('category/:category_id')
+  async getSubcategoriesByCategory(
+    @Param('category_id') category_id: string,
   ): Promise<SuccessResponseDto> {
     try {
-      const subcategory = await this.subcategoriesService.get(id, type);
+      const subcategories = await this.subcategoriesService.get(category_id);
       return this.errorMessageService.success(
-        subcategory,
+        subcategories,
         true,
-        'Subcategory retrieved successfully',
+        'Subcategories retrieved successfully',
         {},
       );
     } catch (error) {

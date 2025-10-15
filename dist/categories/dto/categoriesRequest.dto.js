@@ -10,9 +10,12 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CategoriesRequestDto = void 0;
+const class_transformer_1 = require("class-transformer");
 const class_validator_1 = require("class-validator");
+const subcategoriesRequest_dto_1 = require("../../subcategories/dto/subcategoriesRequest.dto");
 class CategoriesRequestDto {
     name;
+    subcategories;
 }
 exports.CategoriesRequestDto = CategoriesRequestDto;
 __decorate([
@@ -20,4 +23,10 @@ __decorate([
     (0, class_validator_1.IsString)({ message: 'Name must be a string' }),
     __metadata("design:type", String)
 ], CategoriesRequestDto.prototype, "name", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.ValidateNested)(),
+    (0, class_transformer_1.Type)(() => subcategoriesRequest_dto_1.SubcategoriesRequestDto),
+    __metadata("design:type", subcategoriesRequest_dto_1.SubcategoriesRequestDto)
+], CategoriesRequestDto.prototype, "subcategories", void 0);
 //# sourceMappingURL=categoriesRequest.dto.js.map

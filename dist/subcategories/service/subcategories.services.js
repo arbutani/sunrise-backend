@@ -34,67 +34,89 @@ let SubcategoriesService = class SubcategoriesService {
         this.errorMessageService = errorMessageService;
     }
     async create(requestDto) {
+        const transaction = await this.sequelize.transaction({
+            isolationLevel: sequelize_1.Transaction.ISOLATION_LEVELS.REPEATABLE_READ,
+        });
+        let status = false;
         try {
             const findCategory = await this.categoriesRepository.findOne({
                 where: {
                     id: requestDto.category_id,
+                    deletedAt: { [sequelize_1.Op.is]: null },
                 },
+                transaction,
             });
             if (!findCategory) {
-                throw this.errorMessageService.GeneralErrorCore('Category not found.', 200);
+                throw new common_1.NotFoundException('Category not found or is deleted.');
             }
             const existingSubcategory = await this.subcategoriesRepository.findOne({
                 where: {
                     name: requestDto.name,
                     category_id: requestDto.category_id,
+                    deletedAt: { [sequelize_1.Op.is]: null },
                 },
+                transaction,
             });
             if (existingSubcategory) {
-                throw this.errorMessageService.GeneralErrorCore('Subcategory with this name already exists in the specified category.', 200);
+                throw this.errorMessageService.GeneralErrorCore('Subcategory with this name already exists in the specified category', 200);
             }
             const fields = {
                 category_id: requestDto.category_id,
                 name: requestDto.name,
                 createdAt: (0, moment_1.default)().format('YYYY-MM-DD HH:mm:ss'),
                 updatedAt: (0, moment_1.default)().format('YYYY-MM-DD HH:mm:ss'),
+                deletedAt: null,
             };
-            const subcategory = await this.subcategoriesRepository.create(fields);
-            if (subcategory) {
-                return new subcategories_dto_1.SubcategoriesDto(subcategory);
-            }
-            else {
-                throw this.errorMessageService.GeneralErrorCore('Failed to create subcategory.', 200);
-            }
+            const subcategory = await this.subcategoriesRepository.create(fields, {
+                transaction,
+            });
+            await transaction.commit();
+            status = true;
+            return new subcategories_dto_1.SubcategoriesDto(subcategory);
         }
         catch (error) {
+            if (status === false) {
+                await transaction.rollback().catch(() => { });
+            }
             throw this.errorMessageService.CatchHandler(error);
         }
     }
     async update(id, requestDto) {
+        const transaction = await this.sequelize.transaction({
+            isolationLevel: sequelize_1.Transaction.ISOLATION_LEVELS.REPEATABLE_READ,
+        });
+        let status = false;
         try {
-            const existingSubcategory = await this.subcategoriesRepository.findByPk(id);
+            const existingSubcategory = await this.subcategoriesRepository.findOne({
+                where: { id: id, deletedAt: { [sequelize_1.Op.is]: null } },
+                transaction,
+            });
             if (!existingSubcategory) {
-                throw this.errorMessageService.GeneralErrorCore('Subcategory not found', 404);
+                throw new common_1.NotFoundException('Subcategory not found or is deleted');
             }
-            if (requestDto.category_id &&
-                requestDto.category_id !== existingSubcategory.category_id) {
+            const categoryIdToCheck = requestDto.category_id || existingSubcategory.category_id;
+            const nameToCheck = requestDto.name || existingSubcategory.name;
+            if (requestDto.category_id && requestDto.category_id !== existingSubcategory.category_id) {
                 const newCategory = await this.categoriesRepository.findOne({
                     where: {
                         id: requestDto.category_id,
+                        deletedAt: { [sequelize_1.Op.is]: null },
                     },
+                    transaction,
                 });
                 if (!newCategory) {
-                    throw this.errorMessageService.GeneralErrorCore('New category not found', 200);
+                    throw new common_1.NotFoundException('New category not found or is deleted');
                 }
             }
-            if (requestDto.name) {
-                const categoryIdToCheck = requestDto.category_id || existingSubcategory.category_id;
+            if (requestDto.name || requestDto.category_id) {
                 const duplicateSubcategory = await this.subcategoriesRepository.findOne({
                     where: {
-                        name: requestDto.name,
+                        name: nameToCheck,
                         category_id: categoryIdToCheck,
                         id: { [sequelize_1.Op.ne]: id },
+                        deletedAt: { [sequelize_1.Op.is]: null },
                     },
+                    transaction,
                 });
                 if (duplicateSubcategory) {
                     throw this.errorMessageService.GeneralErrorCore('Subcategory with this name already exists in the specified category', 200);
@@ -104,51 +126,90 @@ let SubcategoriesService = class SubcategoriesService {
                 ...requestDto,
                 updatedAt: (0, moment_1.default)().format('YYYY-MM-DD HH:mm:ss'),
             };
-            await this.subcategoriesRepository.update(updateFields, {
-                where: { id: id },
+            const [updateCount] = await this.subcategoriesRepository.update(updateFields, {
+                where: { id: id, deletedAt: { [sequelize_1.Op.is]: null } },
+                transaction,
             });
-            const updatedSubcategory = await this.subcategoriesRepository.findByPk(id);
+            if (updateCount === 0) {
+                throw new common_1.NotFoundException('Subcategory not found or update failed');
+            }
+            await transaction.commit();
+            status = true;
+            const updatedSubcategory = await this.subcategoriesRepository.findOne({
+                where: { id: id, deletedAt: { [sequelize_1.Op.is]: null } },
+                include: [
+                    {
+                        model: categories_entity_1.Categories,
+                        attributes: ['id', 'name'],
+                    },
+                ],
+            });
             if (updatedSubcategory) {
                 return new subcategories_dto_1.SubcategoriesDto(updatedSubcategory);
             }
             else {
-                throw this.errorMessageService.GeneralErrorCore('Failed to retrieve updated subcategory', 200);
+                throw this.errorMessageService.GeneralErrorCore('Failed to retrieve updated subcategory', 500);
+            }
+        }
+        catch (error) {
+            if (status === false) {
+                await transaction.rollback().catch(() => { });
+            }
+            throw this.errorMessageService.CatchHandler(error);
+        }
+    }
+    async get(id, type = 'category_id') {
+        try {
+            if (type === 'id') {
+                const subcategory = await this.subcategoriesRepository.findOne({
+                    where: { id: id, deletedAt: { [sequelize_1.Op.is]: null } },
+                    include: [
+                        {
+                            model: categories_entity_1.Categories,
+                            attributes: ['id', 'name'],
+                            required: false,
+                            where: { deletedAt: { [sequelize_1.Op.is]: null } },
+                        },
+                    ],
+                });
+                if (!subcategory) {
+                    throw new common_1.NotFoundException('Subcategory not found or is deleted');
+                }
+                return new subcategories_dto_1.SubcategoriesDto(subcategory);
+            }
+            else {
+                const subcategories = await this.subcategoriesRepository.findAll({
+                    where: {
+                        category_id: id,
+                        deletedAt: { [sequelize_1.Op.is]: null },
+                    },
+                    include: [
+                        {
+                            model: categories_entity_1.Categories,
+                            attributes: ['id', 'name'],
+                            required: false,
+                            where: { deletedAt: { [sequelize_1.Op.is]: null } },
+                        },
+                    ],
+                    order: [['createdAt', 'DESC']],
+                });
+                if (!subcategories || subcategories.length === 0) {
+                    throw new common_1.NotFoundException('Subcategories not found for the given category');
+                }
+                return subcategories.map((subcategory) => new subcategories_dto_1.SubcategoriesDto(subcategory));
             }
         }
         catch (error) {
             throw this.errorMessageService.CatchHandler(error);
         }
     }
-    async get(id, type = 'category_id') {
-        let subcategories;
-        if (type === 'id') {
-            const subcategories = await this.subcategoriesRepository.findByPk(id);
-            if (!subcategories) {
-                throw this.errorMessageService.GeneralErrorCore('Subcategories not found', 404);
-            }
-            return [new subcategories_dto_1.SubcategoriesDto(subcategories)];
-        }
-        else {
-            subcategories = await this.subcategoriesRepository.findAll({
-                where: {
-                    category_id: id,
-                },
-            });
-            if (!subcategories || subcategories.length === 0) {
-                throw this.errorMessageService.GeneralErrorCore('Subcategories not found', 404);
-            }
-            return subcategories.map((subcategories) => new subcategories_dto_1.SubcategoriesDto(subcategories));
-        }
-    }
     async getAllSubcategories(requestDto) {
         try {
-            if (requestDto && Object.keys(requestDto).length > 0) {
+            if (requestDto && Object.keys(requestDto).length > 0 && requestDto.columns) {
                 const { query, count_query } = await this.queryBuilder(requestDto);
-                const [count, count_metadata] = await this.sequelize.query(count_query, {
-                    raw: true,
-                });
+                const [count] = await this.sequelize.query(count_query, { raw: true });
                 const countRows = count;
-                const [results, metadata] = await this.sequelize.query(query, {
+                const [results] = await this.sequelize.query(query, {
                     raw: true,
                 });
                 const listData = await Promise.all(results.map(async (subcategory) => {
@@ -158,10 +219,17 @@ let SubcategoriesService = class SubcategoriesService {
                     if (subcategory['updated_at']) {
                         subcategory['updatedAt'] = (0, moment_1.default)(subcategory['updated_at']).format('DD-MM-YYYY HH:mm A');
                     }
+                    if (subcategory.category_id) {
+                        const category = await this.categoriesRepository.findOne({
+                            where: { id: subcategory.category_id, deletedAt: { [sequelize_1.Op.is]: null } },
+                            attributes: ['id', 'name'],
+                        });
+                        subcategory.category = category ? category.get({ plain: true }) : null;
+                    }
                     return new subcategories_dto_1.SubcategoriesDto(subcategory);
                 }));
                 return {
-                    recordsTotal: Number(countRows.length > 0 && countRows[0]['count'] != ''
+                    recordsTotal: Number(countRows.length > 0 && countRows[0]['count'] !== ''
                         ? countRows[0]['count']
                         : 0),
                     recordsFiltered: listData.length,
@@ -170,15 +238,19 @@ let SubcategoriesService = class SubcategoriesService {
             }
             else {
                 const subcategories = await this.subcategoriesRepository.findAll({
+                    where: { deletedAt: { [sequelize_1.Op.is]: null } },
                     include: [
                         {
                             model: categories_entity_1.Categories,
                             attributes: ['id', 'name'],
+                            required: false,
+                            where: { deletedAt: { [sequelize_1.Op.is]: null } },
                         },
                     ],
+                    order: [['createdAt', 'DESC']],
                 });
                 if (!subcategories || subcategories.length === 0) {
-                    throw this.errorMessageService.GeneralErrorCore('No subcategories found', 404);
+                    throw new common_1.NotFoundException('No subcategories found');
                 }
                 return subcategories.map((subcategory) => new subcategories_dto_1.SubcategoriesDto(subcategory));
             }
@@ -188,57 +260,56 @@ let SubcategoriesService = class SubcategoriesService {
         }
     }
     async queryBuilder(requestDto) {
+        const transaction = await this.sequelize.transaction({
+            isolationLevel: sequelize_1.Transaction.ISOLATION_LEVELS.REPEATABLE_READ,
+        });
+        let status = false;
         try {
             const columns = ['id', 'category_id', 'name', 'created_at', 'updated_at'];
-            let where = '';
+            let where = 'deleted_at IS NULL';
             if (requestDto.category_id && requestDto.category_id != '') {
-                if (where != '') {
-                    where += ` AND `;
-                }
-                where += ` category_id='${requestDto.category_id}' `;
+                where += ` AND category_id='${requestDto.category_id}' `;
             }
             if (requestDto.name && requestDto.name != '') {
-                if (where != '') {
-                    where += ` AND `;
-                }
-                where += ` name ILIKE '%${requestDto.name}%' `;
+                where += ` AND name ILIKE '%${requestDto.name}%' `;
             }
             if (requestDto.search && requestDto.search.value) {
                 const search = requestDto.search.value;
                 if (search != '') {
+                    let searchConditions = [];
                     for (const column of requestDto.columns) {
-                        if (column.searchable != null && column.searchable == 'true') {
-                            if (where != '') {
-                                where += ` AND `;
-                            }
-                            where += ` ${columns[column.data]} ILIKE '%${search}%' `;
+                        const columnIndex = Number(column.data);
+                        if (column.searchable != null && column.searchable == 'true' && columns[columnIndex]) {
+                            searchConditions.push(` ${columns[columnIndex]} ILIKE '%${search}%' `);
                         }
+                    }
+                    if (searchConditions.length > 0) {
+                        where += ` AND (${searchConditions.join(' OR ')}) `;
                     }
                 }
             }
             if (requestDto.id != null && requestDto.id != '') {
-                if (where != '') {
-                    where += ` AND `;
-                }
-                where = " id='" + requestDto.id + "' ";
+                where += ` AND id='${requestDto.id}' `;
             }
-            let query = `SELECT * FROM subcategories`;
-            let countQuery = `SELECT COUNT(*) as count FROM subcategories`;
+            let query = `SELECT subcategories.* FROM subcategories 
+                  JOIN categories ON subcategories.category_id = categories.id`;
+            let countQuery = `SELECT COUNT(subcategories.id) as count FROM subcategories 
+                        JOIN categories ON subcategories.category_id = categories.id`;
+            where += ` AND categories.deleted_at IS NULL`;
             if (where != '') {
                 query += ` WHERE ${where}`;
                 countQuery += ` WHERE ${where}`;
             }
             let orderBy = '';
             if (requestDto.order && requestDto.order.length > 0) {
-                for (const order of requestDto.order) {
-                    if (orderBy != '') {
-                        orderBy += ',';
-                    }
-                    orderBy += `${columns[order.column]} ${order.dir}`;
+                const order = requestDto.order[0];
+                const orderColumnIndex = Number(order.column);
+                if (columns[orderColumnIndex]) {
+                    orderBy = `${columns[orderColumnIndex]} ${order.dir}`;
                 }
             }
             if (orderBy == '') {
-                orderBy = 'created_at DESC';
+                orderBy = 'subcategories.created_at DESC';
             }
             query += ` ORDER BY ${orderBy}`;
             if (requestDto.length && requestDto.start) {
@@ -249,26 +320,42 @@ let SubcategoriesService = class SubcategoriesService {
             else {
                 query += ` LIMIT 10 OFFSET 0`;
             }
+            await transaction.commit();
+            status = true;
             return { query: query, count_query: countQuery };
         }
         catch (error) {
+            if (status == false) {
+                await transaction.rollback().catch(() => { });
+            }
             throw this.errorMessageService.CatchHandler(error);
         }
     }
     async deleteSubcategory(id) {
+        const transaction = await this.sequelize.transaction({
+            isolationLevel: sequelize_1.Transaction.ISOLATION_LEVELS.REPEATABLE_READ,
+        });
+        let status = false;
         try {
-            const [updatedRows] = await this.subcategoriesRepository.update({ deletedAt: (0, moment_1.default)().format('YYYY-MM-DD HH:mm:ss') }, {
+            const deletedAt = (0, moment_1.default)().format('YYYY-MM-DD HH:mm:ss');
+            const [updatedRows] = await this.subcategoriesRepository.update({ deletedAt: deletedAt }, {
                 where: {
                     id: id,
                     deletedAt: { [sequelize_1.Op.is]: null },
                 },
+                transaction: transaction,
             });
             if (updatedRows === 0) {
-                throw this.errorMessageService.GeneralErrorCore('Subcategory not found', 404);
+                throw new common_1.NotFoundException('Subcategory not found or already deleted');
             }
+            await transaction.commit();
+            status = true;
             return { message: 'Subcategory deleted successfully' };
         }
         catch (error) {
+            if (status == false) {
+                await transaction.rollback().catch(() => { });
+            }
             throw this.errorMessageService.CatchHandler(error);
         }
     }

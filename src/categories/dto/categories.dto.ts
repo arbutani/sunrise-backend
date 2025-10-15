@@ -1,6 +1,7 @@
 /* eslint-disable prettier/prettier */
 
 import moment from 'moment';
+import { SubcategoriesDto } from 'src/subcategories/dto/subcategories.dto';
 
 export class CategoriesDto {
   id: string;
@@ -8,6 +9,7 @@ export class CategoriesDto {
   createdAt: string;
   updatedAt: string;
   deletedAt: string;
+  subcategories: SubcategoriesDto;
 
   constructor(data: any) {
     data = data.dataValues ? data.dataValues : data;
@@ -45,6 +47,10 @@ export class CategoriesDto {
       this.deletedAt = moment(deletedAt, 'YYYY-MM-DD HH:mm:ss').format(
         'DD-MM-YYYY hh:mm A',
       );
+
+      if (data.subcategories) {
+        this.subcategories = new SubcategoriesDto(data.subcategories);
+      }
     }
   }
 }

@@ -12,6 +12,8 @@ const subcategories_controller_1 = require("../controller/subcategories.controll
 const subcategories_provider_1 = require("../provider/subcategories.provider");
 const subcategories_services_1 = require("../service/subcategories.services");
 const categories_module_1 = require("../../categories/module/categories.module");
+const jwt_auth_guard_1 = require("../../JwtAuthGuard/jwt_auth.guard");
+const jwt_1 = require("@nestjs/jwt");
 let SubcategoriesModule = class SubcategoriesModule {
 };
 exports.SubcategoriesModule = SubcategoriesModule;
@@ -19,7 +21,13 @@ exports.SubcategoriesModule = SubcategoriesModule = __decorate([
     (0, common_1.Module)({
         imports: [(0, common_1.forwardRef)(() => categories_module_1.CategoriesModule)],
         controllers: [subcategories_controller_1.SubcategoriesController],
-        providers: [...subcategories_provider_1.SubcategoriesProvider, subcategories_services_1.SubcategoriesService],
+        providers: [...subcategories_provider_1.SubcategoriesProvider, subcategories_services_1.SubcategoriesService,
+            jwt_auth_guard_1.JwtAuthGuard,
+            {
+                provide: jwt_1.JwtService,
+                useValue: new jwt_1.JwtService({}),
+            },
+        ],
         exports: [...subcategories_provider_1.SubcategoriesProvider],
     })
 ], SubcategoriesModule);

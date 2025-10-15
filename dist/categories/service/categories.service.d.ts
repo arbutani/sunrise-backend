@@ -11,8 +11,10 @@ export declare class CategoriesService {
     private readonly errorMessageService;
     constructor(categoriesRepository: typeof Categories, subcategoriesRepository: typeof Subcategories, sequelize: Sequelize, errorMessageService: ErrorMessageService);
     createCategory(requestDto: CategoriesRequestDto): Promise<CategoriesDto>;
-    updateCategory(id: string, requestDto: CategoriesRequestDto): Promise<CategoriesDto>;
     getCategory(id: string): Promise<CategoriesDto>;
+    deleteCategory(id: string): Promise<{
+        message: string;
+    }>;
     queryBuilder(requestDto: any): Promise<{
         query: string;
         count_query: string;
@@ -22,7 +24,5 @@ export declare class CategoriesService {
         recordsFiltered: number;
         data: any[];
     }>;
-    deleteCategory(id: string): Promise<{
-        message: string;
-    }>;
+    updateCategory(id: string, requestDto: CategoriesRequestDto): Promise<CategoriesDto>;
 }

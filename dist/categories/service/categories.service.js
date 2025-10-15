@@ -21,6 +21,8 @@ const errormessage_service_1 = require("../../shared/services/errormessage.servi
 const moment_1 = __importDefault(require("moment"));
 const sequelize_1 = require("sequelize");
 const categories_dto_1 = require("../dto/categories.dto");
+const subcategories_entity_1 = require("../../subcategories/entity/subcategories.entity");
+const subcategories_dto_1 = require("../../subcategories/dto/subcategories.dto");
 let CategoriesService = class CategoriesService {
     categoriesRepository;
     subcategoriesRepository;
@@ -39,8 +41,8 @@ let CategoriesService = class CategoriesService {
         let status = false;
         try {
             const existingCategory = await this.categoriesRepository.findOne({
-                where: { name: requestDto.name },
-                transaction: transaction,
+                where: { name: requestDto.name, deletedAt: { [sequelize_1.Op.is]: null } },
+                transaction,
             });
             if (existingCategory) {
                 throw this.errorMessageService.GeneralErrorCore('Category with this name already exists', 200);
@@ -51,93 +53,96 @@ let CategoriesService = class CategoriesService {
                 updatedAt: (0, moment_1.default)().format('YYYY-MM-DD HH:mm:ss'),
                 deletedAt: null,
             };
-            const category = await this.categoriesRepository.create(categoryFields, {
+            let category = await this.categoriesRepository.create(categoryFields, {
                 transaction,
             });
-            await transaction.commit();
-            status = true;
-            const newCategory = await this.categoriesRepository.findByPk(category.id);
-            if (!newCategory) {
-                throw this.errorMessageService.GeneralErrorCore('Failed to fetch created category', 500);
-            }
-            return new categories_dto_1.CategoriesDto(newCategory);
-        }
-        catch (error) {
-            if (status == false) {
-                await transaction.rollback().catch(() => { });
-            }
-            throw this.errorMessageService.CatchHandler(error);
-        }
-    }
-    async updateCategory(id, requestDto) {
-        const transaction = await this.sequelize.transaction({
-            isolationLevel: sequelize_1.Transaction.ISOLATION_LEVELS.REPEATABLE_READ,
-        });
-        let status = false;
-        try {
-            const oldCategory = await this.categoriesRepository.findByPk(id, {
-                transaction: transaction,
-            });
-            if (!oldCategory) {
-                throw this.errorMessageService.GeneralErrorCore('Category not found', 404);
-            }
-            if (requestDto.name !== oldCategory.name) {
-                const findCategory = await this.categoriesRepository.findOne({
-                    where: {
-                        name: requestDto.name,
-                        id: { [sequelize_1.Op.ne]: id },
-                    },
-                    transaction: transaction,
-                });
-                if (findCategory) {
-                    throw this.errorMessageService.GeneralErrorCore('Category with this name already exists', 200);
+            category = category.dataValues ? category.dataValues : category;
+            const subcategoriesList = [];
+            if (requestDto.subcategories &&
+                Array.isArray(requestDto.subcategories) &&
+                requestDto.subcategories.length > 0) {
+                for (const sub of requestDto.subcategories) {
+                    const subcategoryData = {
+                        category_id: category.id,
+                        name: sub.name,
+                        createdAt: (0, moment_1.default)().format('YYYY-MM-DD HH:mm:ss'),
+                        updatedAt: (0, moment_1.default)().format('YYYY-MM-DD HH:mm:ss'),
+                        deletedAt: null,
+                    };
+                    const subcategory = await this.subcategoriesRepository.create(subcategoryData, { transaction });
+                    subcategoriesList.push(subcategory);
                 }
             }
-            const categoryFields = {
-                name: requestDto.name,
-                updatedAt: (0, moment_1.default)().format('YYYY-MM-DD HH:mm:ss'),
-            };
-            const [updatedCount] = await this.categoriesRepository.update(categoryFields, { where: { id }, transaction });
-            if (updatedCount === 0) {
-                throw this.errorMessageService.GeneralErrorCore('Failed to update category', 200);
-            }
+            category['subcategories'] = subcategoriesList;
             await transaction.commit();
             status = true;
-            const updatedCategory = await this.categoriesRepository.findByPk(id);
-            if (!updatedCategory) {
-                throw this.errorMessageService.GeneralErrorCore('Failed to fetch updated category', 500);
-            }
-            return new categories_dto_1.CategoriesDto(updatedCategory);
+            return new categories_dto_1.CategoriesDto(category);
         }
         catch (error) {
-            if (status == false) {
+            if (status === false) {
                 await transaction.rollback().catch(() => { });
             }
             throw this.errorMessageService.CatchHandler(error);
         }
     }
     async getCategory(id) {
+        try {
+            const category = await this.categoriesRepository.findOne({
+                where: { id: id, deletedAt: { [sequelize_1.Op.is]: null } },
+                include: [
+                    {
+                        model: subcategories_entity_1.Subcategories,
+                        required: false,
+                        where: { deletedAt: { [sequelize_1.Op.is]: null } },
+                    },
+                ],
+                subQuery: false,
+            });
+            if (!category) {
+                throw new common_1.NotFoundException('Category not found');
+            }
+            const categoryPlain = category.get({ plain: true });
+            let subcategory = null;
+            if (categoryPlain.subcategories && categoryPlain.subcategories.length > 0) {
+                subcategory = new subcategories_dto_1.SubcategoriesDto(categoryPlain.subcategories[0]);
+            }
+            const responseData = {
+                ...categoryPlain,
+                subcategories: subcategory,
+            };
+            return new categories_dto_1.CategoriesDto(responseData);
+        }
+        catch (error) {
+            throw this.errorMessageService.CatchHandler(error);
+        }
+    }
+    async deleteCategory(id) {
         const transaction = await this.sequelize.transaction({
             isolationLevel: sequelize_1.Transaction.ISOLATION_LEVELS.REPEATABLE_READ,
         });
         let status = false;
         try {
-            const category = await this.categoriesRepository.findByPk(id, {
-                include: [
-                    {
-                        model: this.subcategoriesRepository,
-                        where: { deletedAt: null },
-                        required: false,
-                    },
-                ],
+            const deletedAt = (0, moment_1.default)().format('YYYY-MM-DD HH:mm:ss');
+            const [updatedRows] = await this.categoriesRepository.update({ deletedAt: deletedAt }, {
+                where: {
+                    id: id,
+                    deletedAt: { [sequelize_1.Op.is]: null },
+                },
                 transaction: transaction,
             });
-            if (!category) {
-                throw this.errorMessageService.GeneralErrorCore('Category not found', 404);
+            if (updatedRows === 0) {
+                throw new common_1.NotFoundException('Category not found or already deleted');
             }
+            await this.subcategoriesRepository.update({ deletedAt: deletedAt }, {
+                where: {
+                    category_id: id,
+                    deletedAt: { [sequelize_1.Op.is]: null },
+                },
+                transaction: transaction,
+            });
             await transaction.commit();
             status = true;
-            return new categories_dto_1.CategoriesDto(category);
+            return { message: 'Category and related subcategories deleted successfully' };
         }
         catch (error) {
             if (status == false) {
@@ -152,18 +157,28 @@ let CategoriesService = class CategoriesService {
         });
         let status = false;
         try {
-            const columns = ['id', 'name', 'createdAt'];
+            const columns = [
+                'id',
+                'name',
+                'created_at',
+                'updated_at',
+            ];
             let where = 'deleted_at IS NULL';
             if (requestDto.search && requestDto.search.value) {
                 const search = requestDto.search.value;
                 if (search != '') {
+                    let searchConditions = [];
                     for (const column of requestDto.columns) {
-                        if (column.searchable != null && column.searchable == 'true') {
-                            if (where != '') {
-                                where += ` AND `;
-                            }
-                            where += ` ${columns[column.data]} ILIKE '%${search}%' `;
+                        const columnIndex = Number(column.data);
+                        if (column.searchable != null && column.searchable == 'true' && columns[columnIndex]) {
+                            searchConditions.push(` ${columns[columnIndex]} ILIKE '%${search}%' `);
                         }
+                    }
+                    if (searchConditions.length > 0) {
+                        if (where != '') {
+                            where += ` AND `;
+                        }
+                        where += ` (${searchConditions.join(' OR ')}) `;
                     }
                 }
             }
@@ -181,14 +196,11 @@ let CategoriesService = class CategoriesService {
             }
             let orderBy = '';
             if (requestDto.order && requestDto.order.length > 0) {
-                for (const order of requestDto.order) {
-                    if (orderBy != '') {
-                        orderBy += ',';
-                    }
-                    orderBy += `${order.column} ${order.dir}`;
-                }
                 const order = requestDto.order[0];
-                orderBy = `${columns[order.column]} ${order.dir}`;
+                const orderColumnIndex = Number(order.column);
+                if (columns[orderColumnIndex]) {
+                    orderBy = `${columns[orderColumnIndex]} ${order.dir}`;
+                }
             }
             if (orderBy == '') {
                 orderBy = 'created_at DESC';
@@ -214,35 +226,23 @@ let CategoriesService = class CategoriesService {
         }
     }
     async getAllCategories(requestDto) {
-        const transaction = await this.sequelize.transaction({
-            isolationLevel: sequelize_1.Transaction.ISOLATION_LEVELS.REPEATABLE_READ,
-        });
-        let status = false;
         try {
-            if (requestDto && Object.keys(requestDto).length > 0) {
+            if (requestDto && Object.keys(requestDto).length > 0 && requestDto.columns) {
                 const { query, count_query } = await this.queryBuilder(requestDto);
-                const [count] = await this.sequelize.query(count_query, {
-                    raw: true,
-                    transaction: transaction,
-                });
+                const [count] = await this.sequelize.query(count_query, { raw: true });
                 const countRows = count;
-                const [results] = await this.sequelize.query(query, {
-                    raw: true,
-                    transaction: transaction,
-                });
-                const listData = await Promise.all(results.map(async (category) => {
+                const [results] = await this.sequelize.query(query, { raw: true });
+                const listData = results.map((category) => {
                     if (category['created_at']) {
-                        category['createdAt'] = (0, moment_1.default)(category['created_at']).format('DD-MM-YYYY HH:mm A');
+                        category['created_at'] = (0, moment_1.default)(category['created_at']).format('DD-MM-YYYY hh:mm A');
                     }
                     if (category['updated_at']) {
-                        category['updatedAt'] = (0, moment_1.default)(category['updated_at']).format('DD-MM-YYYY HH:mm A');
+                        category['updated_at'] = (0, moment_1.default)(category['updated_at']).format('DD-MM-YYYY hh:mm A');
                     }
                     return category;
-                }));
-                await transaction.commit();
-                status = true;
+                });
                 return {
-                    recordsTotal: Number(countRows.length > 0 && countRows[0]['count'] != ''
+                    recordsTotal: Number(countRows.length > 0 && countRows[0]['count'] !== ''
                         ? countRows[0]['count']
                         : 0),
                     recordsFiltered: listData.length,
@@ -251,55 +251,118 @@ let CategoriesService = class CategoriesService {
             }
             else {
                 const categories = await this.categoriesRepository.findAll({
-                    where: {
-                        deletedAt: { [sequelize_1.Op.is]: null },
-                    },
+                    where: { deletedAt: { [sequelize_1.Op.eq]: null } },
                     include: [
                         {
-                            model: this.subcategoriesRepository,
-                            where: { deletedAt: null },
+                            model: subcategories_entity_1.Subcategories,
                             required: false,
+                            where: { deletedAt: { [sequelize_1.Op.is]: null } },
                         },
                     ],
-                    transaction: transaction,
+                    order: [['createdAt', 'DESC']],
                 });
                 if (!categories || categories.length === 0) {
-                    throw this.errorMessageService.GeneralErrorCore('No categories found', 404);
+                    throw new common_1.NotFoundException('No categories found');
                 }
-                await transaction.commit();
-                status = true;
-                return categories.map((category) => new categories_dto_1.CategoriesDto(category));
+                return categories.map((category) => {
+                    const categoryPlain = category.get({ plain: true });
+                    let subcategory = null;
+                    if (categoryPlain.subcategories && categoryPlain.subcategories.length > 0) {
+                        subcategory = new subcategories_dto_1.SubcategoriesDto(categoryPlain.subcategories[0]);
+                    }
+                    categoryPlain.subcategories = subcategory;
+                    return new categories_dto_1.CategoriesDto(categoryPlain);
+                });
             }
         }
         catch (error) {
-            if (status == false) {
-                await transaction.rollback().catch(() => { });
-            }
             throw this.errorMessageService.CatchHandler(error);
         }
     }
-    async deleteCategory(id) {
+    async updateCategory(id, requestDto) {
         const transaction = await this.sequelize.transaction({
             isolationLevel: sequelize_1.Transaction.ISOLATION_LEVELS.REPEATABLE_READ,
         });
         let status = false;
         try {
-            const [updatedRows] = await this.categoriesRepository.update({ deletedAt: (0, moment_1.default)().format('YYYY-MM-DD HH:mm:ss') }, {
-                where: {
-                    id: id,
-                    deletedAt: { [sequelize_1.Op.is]: null },
-                },
-                transaction: transaction,
+            const oldCategory = await this.categoriesRepository.findOne({
+                where: { id: id, deletedAt: { [sequelize_1.Op.is]: null } },
+                transaction,
             });
-            if (updatedRows === 0) {
-                throw this.errorMessageService.GeneralErrorCore('Category not found', 404);
+            if (!oldCategory) {
+                throw new common_1.NotFoundException('Category not found');
+            }
+            const oldCategoryPlain = oldCategory.dataValues ? oldCategory.dataValues : oldCategory;
+            if (requestDto.name && requestDto.name !== oldCategoryPlain.name) {
+                const existingCategory = await this.categoriesRepository.findOne({
+                    where: {
+                        name: requestDto.name,
+                        deletedAt: { [sequelize_1.Op.is]: null },
+                        id: { [sequelize_1.Op.ne]: id },
+                    },
+                    transaction,
+                });
+                if (existingCategory) {
+                    throw this.errorMessageService.GeneralErrorCore('Category with this name already exists', 200);
+                }
+            }
+            const categoryFields = {
+                name: requestDto.name,
+                updatedAt: (0, moment_1.default)().format('YYYY-MM-DD HH:mm:ss'),
+            };
+            const [updateCount] = await this.categoriesRepository.update(categoryFields, {
+                where: { id },
+                transaction,
+            });
+            if (updateCount === 0) {
+                throw this.errorMessageService.GeneralErrorCore('Failed to update category', 500);
+            }
+            if (requestDto.subcategories && Array.isArray(requestDto.subcategories) && requestDto.subcategories.length > 0) {
+                const existingSubcategories = await this.subcategoriesRepository.findAll({
+                    where: {
+                        category_id: id,
+                        deletedAt: { [sequelize_1.Op.is]: null }
+                    },
+                    transaction,
+                });
+                const existingSubcategoriesPlain = existingSubcategories.map(sub => sub.dataValues ? sub.dataValues : sub);
+                for (const sub of requestDto.subcategories) {
+                    const existingSub = existingSubcategoriesPlain.find(existing => existing.name === sub.name);
+                    if (!existingSub) {
+                        const subcategoryData = {
+                            category_id: id,
+                            name: sub.name,
+                            createdAt: (0, moment_1.default)().format('YYYY-MM-DD HH:mm:ss'),
+                            updatedAt: (0, moment_1.default)().format('YYYY-MM-DD HH:mm:ss'),
+                            deletedAt: null,
+                        };
+                        await this.subcategoriesRepository.create(subcategoryData, { transaction });
+                    }
+                }
             }
             await transaction.commit();
             status = true;
-            return { message: 'Category deleted successfully' };
+            const updatedCategory = await this.categoriesRepository.findOne({
+                where: { id: id, deletedAt: { [sequelize_1.Op.is]: null } },
+                include: [
+                    {
+                        model: subcategories_entity_1.Subcategories,
+                        required: false,
+                        where: { deletedAt: { [sequelize_1.Op.is]: null } },
+                    },
+                ],
+            });
+            if (!updatedCategory) {
+                throw this.errorMessageService.GeneralErrorCore('Failed to fetch updated category', 500);
+            }
+            let categoryPlain = updatedCategory.get({ plain: true });
+            if (categoryPlain.subcategories && categoryPlain.subcategories.length > 0) {
+                categoryPlain.subcategories = categoryPlain.subcategories.map((sub) => new subcategories_dto_1.SubcategoriesDto(sub));
+            }
+            return new categories_dto_1.CategoriesDto(categoryPlain);
         }
         catch (error) {
-            if (status == false) {
+            if (status === false) {
                 await transaction.rollback().catch(() => { });
             }
             throw this.errorMessageService.CatchHandler(error);

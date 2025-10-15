@@ -12,7 +12,7 @@ export declare class SubcategoriesService {
     constructor(subcategoriesRepository: typeof Subcategories, categoriesRepository: typeof Categories, sequelize: Sequelize, errorMessageService: ErrorMessageService);
     create(requestDto: SubcategoriesRequestDto): Promise<SubcategoriesDto>;
     update(id: string, requestDto: Partial<SubcategoriesRequestDto>): Promise<SubcategoriesDto>;
-    get(id: string, type?: string): Promise<any>;
+    get(id: string, type?: string): Promise<SubcategoriesDto | SubcategoriesDto[]>;
     getAllSubcategories(requestDto?: any): Promise<SubcategoriesDto[] | {
         recordsTotal: number;
         recordsFiltered: number;

@@ -8,7 +8,7 @@ export declare class SubcategoriesController {
     constructor(subcategoriesService: SubcategoriesService, errorMessageService: ErrorMessageService);
     createSubcategory(requestDto: SubcategoriesRequestDto): Promise<SuccessResponseDto>;
     updateSubcategory(id: string, requestDto: Partial<SubcategoriesRequestDto>): Promise<SuccessResponseDto>;
-    getSubcategory(id: string, type?: string): Promise<SuccessResponseDto>;
+    getSubcategoriesByCategory(category_id: string): Promise<SuccessResponseDto>;
     getAllSubcategories(query: any): Promise<any>;
     deleteSubcategory(id: string): Promise<SuccessResponseDto>;
 }

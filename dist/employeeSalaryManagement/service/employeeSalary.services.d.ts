@@ -1,5 +1,5 @@
 import { ErrorMessageService } from 'src/shared/services/errormessage.service';
-import { Sequelize } from 'sequelize-typescript';
+import { Sequelize } from 'sequelize';
 import { EmployeeSalary } from '../entity/employeeSalary.entity';
 import { Employee } from 'src/employeeManagement/entity/employeeManagement.entity';
 import { EmployeeSalaryRequestDto } from '../dto/employeeSalaryRequest.dto';

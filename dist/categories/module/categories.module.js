@@ -8,10 +8,12 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CategoriesModule = void 0;
 const common_1 = require("@nestjs/common");
+const jwt_1 = require("@nestjs/jwt");
 const categories_provider_1 = require("../provider/categories.provider");
 const categories_service_1 = require("../service/categories.service");
 const categories_controller_1 = require("../controller/categories.controller");
 const subcategories_module_1 = require("../../subcategories/module/subcategories.module");
+const jwt_auth_guard_1 = require("../../JwtAuthGuard/jwt_auth.guard");
 let CategoriesModule = class CategoriesModule {
 };
 exports.CategoriesModule = CategoriesModule;
@@ -19,7 +21,15 @@ exports.CategoriesModule = CategoriesModule = __decorate([
     (0, common_1.Module)({
         imports: [(0, common_1.forwardRef)(() => subcategories_module_1.SubcategoriesModule)],
         controllers: [categories_controller_1.CategoriesController],
-        providers: [...categories_provider_1.CategoriesProvider, categories_service_1.CategoriesService],
+        providers: [
+            ...categories_provider_1.CategoriesProvider,
+            categories_service_1.CategoriesService,
+            jwt_auth_guard_1.JwtAuthGuard,
+            {
+                provide: jwt_1.JwtService,
+                useValue: new jwt_1.JwtService({}),
+            },
+        ],
         exports: [...categories_provider_1.CategoriesProvider],
     })
 ], CategoriesModule);

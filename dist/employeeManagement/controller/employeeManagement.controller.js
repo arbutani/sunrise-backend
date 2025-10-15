@@ -17,7 +17,6 @@ const common_1 = require("@nestjs/common");
 const errormessage_service_1 = require("../../shared/services/errormessage.service");
 const employeeManagementRequest_dto_1 = require("../dto/employeeManagementRequest.dto");
 const employeeManagement_service_1 = require("../service/employeeManagement.service");
-const jwt_auth_guard_1 = require("../../JwtAuthGuard/jwt_auth.guard");
 const public_decorator_1 = require("../../JwtAuthGuard/public.decorator");
 const employeeManagementPutRequest_dto_1 = require("../dto/employeeManagementPutRequest.dto");
 let EmployeeController = class EmployeeController {
@@ -127,7 +126,6 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], EmployeeController.prototype, "deleteEmployee", null);
 exports.EmployeeController = EmployeeController = __decorate([
-    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     (0, common_1.Controller)('employee-management'),
     __metadata("design:paramtypes", [employeeManagement_service_1.EmployeeService,
         errormessage_service_1.ErrorMessageService])

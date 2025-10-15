@@ -42,10 +42,10 @@ let SubcategoriesController = class SubcategoriesController {
             throw this.errorMessageService.error(error);
         }
     }
-    async getSubcategory(id, type = 'id') {
+    async getSubcategoriesByCategory(category_id) {
         try {
-            const subcategory = await this.subcategoriesService.get(id, type);
-            return this.errorMessageService.success(subcategory, true, 'Subcategory retrieved successfully', {});
+            const subcategories = await this.subcategoriesService.get(category_id);
+            return this.errorMessageService.success(subcategories, true, 'Subcategories retrieved successfully', {});
         }
         catch (error) {
             throw this.errorMessageService.error(error);
@@ -86,13 +86,12 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], SubcategoriesController.prototype, "updateSubcategory", null);
 __decorate([
-    (0, common_1.Get)(':id'),
-    __param(0, (0, common_1.Param)('id')),
-    __param(1, (0, common_1.Query)('type')),
+    (0, common_1.Get)('category/:category_id'),
+    __param(0, (0, common_1.Param)('category_id')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
-], SubcategoriesController.prototype, "getSubcategory", null);
+], SubcategoriesController.prototype, "getSubcategoriesByCategory", null);
 __decorate([
     (0, common_1.Get)(),
     __param(0, (0, common_1.Query)()),

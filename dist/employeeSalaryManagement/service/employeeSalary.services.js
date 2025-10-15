@@ -19,7 +19,7 @@ exports.EmployeeSalaryService = void 0;
 const common_1 = require("@nestjs/common");
 const errormessage_service_1 = require("../../shared/services/errormessage.service");
 const moment_1 = __importDefault(require("moment"));
-const sequelize_typescript_1 = require("sequelize-typescript");
+const sequelize_1 = require("sequelize");
 const employeeManagement_entity_1 = require("../../employeeManagement/entity/employeeManagement.entity");
 const employeeSalary_dto_1 = require("../dto/employeeSalary.dto");
 let EmployeeSalaryService = class EmployeeSalaryService {
@@ -34,11 +34,16 @@ let EmployeeSalaryService = class EmployeeSalaryService {
         this.errorMessageService = errorMessageService;
     }
     async create(requestDto) {
+        const transaction = await this.sequelize.transaction({
+            isolationLevel: sequelize_1.Transaction.ISOLATION_LEVELS.REPEATABLE_READ,
+        });
+        let status = false;
         try {
             const findEmployee = await this.employeeRepository.findOne({
                 where: {
                     id: requestDto.employee_id,
                 },
+                transaction,
             });
             if (!findEmployee) {
                 throw this.errorMessageService.GeneralErrorCore('Employee not found.', 200);
@@ -47,6 +52,7 @@ let EmployeeSalaryService = class EmployeeSalaryService {
                 where: {
                     employee_id: requestDto.employee_id,
                 },
+                transaction,
             });
             if (existingSalary) {
                 throw this.errorMessageService.GeneralErrorCore('Salary record already exists for this employee.', 200);
@@ -59,8 +65,12 @@ let EmployeeSalaryService = class EmployeeSalaryService {
                 createdAt: (0, moment_1.default)().format('YYYY-MM-DD HH:mm:ss'),
                 updatedAt: (0, moment_1.default)().format('YYYY-MM-DD HH:mm:ss'),
             };
-            const employeeSalary = await this.employeeSalaryRepository.create(fields);
+            const employeeSalary = await this.employeeSalaryRepository.create(fields, {
+                transaction,
+            });
             if (employeeSalary) {
+                await transaction.commit();
+                status = true;
                 return new employeeSalary_dto_1.EmployeeSalaryDto(employeeSalary);
             }
             else {
@@ -68,15 +78,23 @@ let EmployeeSalaryService = class EmployeeSalaryService {
             }
         }
         catch (error) {
+            if (status == false) {
+                await transaction.rollback().catch(() => { });
+            }
             throw this.errorMessageService.CatchHandler(error);
         }
     }
     async update(employee_id, requestDto) {
+        const transaction = await this.sequelize.transaction({
+            isolationLevel: sequelize_1.Transaction.ISOLATION_LEVELS.REPEATABLE_READ,
+        });
+        let status = false;
         try {
             const existingSalary = await this.employeeSalaryRepository.findOne({
                 where: {
                     employee_id: employee_id,
                 },
+                transaction,
             });
             if (!existingSalary) {
                 throw this.errorMessageService.GeneralErrorCore('Employee salary not found', 404);
@@ -86,6 +104,7 @@ let EmployeeSalaryService = class EmployeeSalaryService {
                     where: {
                         id: requestDto.employee_id,
                     },
+                    transaction,
                 });
                 if (!newEmployee) {
                     throw this.errorMessageService.GeneralErrorCore('New employee not found', 200);
@@ -94,6 +113,7 @@ let EmployeeSalaryService = class EmployeeSalaryService {
                     where: {
                         employee_id: requestDto.employee_id,
                     },
+                    transaction,
                 });
                 if (duplicateSalary) {
                     throw this.errorMessageService.GeneralErrorCore('Salary record already exists for the new employee', 200);
@@ -105,12 +125,16 @@ let EmployeeSalaryService = class EmployeeSalaryService {
             };
             await this.employeeSalaryRepository.update(updateFields, {
                 where: { employee_id: employee_id },
+                transaction,
             });
             const updatedEmployeeId = requestDto.employee_id || employee_id;
             const updatedSalary = await this.employeeSalaryRepository.findOne({
                 where: { employee_id: updatedEmployeeId },
+                transaction,
             });
             if (updatedSalary) {
+                await transaction.commit();
+                status = true;
                 return new employeeSalary_dto_1.EmployeeSalaryDto(updatedSalary);
             }
             else {
@@ -118,6 +142,9 @@ let EmployeeSalaryService = class EmployeeSalaryService {
             }
         }
         catch (error) {
+            if (status === false) {
+                await transaction.rollback().catch(() => { });
+            }
             throw this.errorMessageService.CatchHandler(error);
         }
     }
@@ -142,15 +169,24 @@ let EmployeeSalaryService = class EmployeeSalaryService {
         }
     }
     async deleteEmployeeSalary(id) {
+        const transaction = await this.sequelize.transaction({
+            isolationLevel: sequelize_1.Transaction.ISOLATION_LEVELS.REPEATABLE_READ,
+        });
+        let status = false;
         try {
-            const employeeSalary = await this.employeeSalaryRepository.findByPk(id);
+            const employeeSalary = await this.employeeSalaryRepository.findByPk(id, {
+                transaction,
+            });
             if (!employeeSalary) {
                 throw this.errorMessageService.GeneralErrorCore('Employee salary not found', 404);
             }
             const deleted = await this.employeeSalaryRepository.destroy({
                 where: { id: id },
+                transaction,
             });
             if (deleted) {
+                await transaction.commit();
+                status = true;
                 return { message: 'Employee salary deleted successfully' };
             }
             else {
@@ -158,6 +194,9 @@ let EmployeeSalaryService = class EmployeeSalaryService {
             }
         }
         catch (error) {
+            if (status == false) {
+                await transaction.rollback().catch(() => { });
+            }
             throw this.errorMessageService.CatchHandler(error);
         }
     }
@@ -278,7 +317,7 @@ exports.EmployeeSalaryService = EmployeeSalaryService = __decorate([
     __param(0, (0, common_1.Inject)('EMPLOYEE_SALARY_REPOSITORY')),
     __param(1, (0, common_1.Inject)('EMPLOYEE_REPOSITORY')),
     __param(2, (0, common_1.Inject)('SEQUELIZE')),
-    __metadata("design:paramtypes", [Object, Object, sequelize_typescript_1.Sequelize,
+    __metadata("design:paramtypes", [Object, Object, sequelize_1.Sequelize,
         errormessage_service_1.ErrorMessageService])
 ], EmployeeSalaryService);
 //# sourceMappingURL=employeeSalary.services.js.map
