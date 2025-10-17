@@ -218,37 +218,23 @@ export class EmployeeService {
         );
       }
 
-      let salary: any = null;
+      let salary: EmployeeSalary | null = null;
       if (requestDto.salary) {
-        const existingSalary = await this.employeeSalaryRepository.findOne({
-          where: { employee_id: id },
-          transaction,
-        });
-
         const salaryData = {
           employee_id: id,
           monthly_salary: requestDto.salary.monthly_salary,
           working_days: requestDto.salary.working_days,
           working_hour: requestDto.salary.working_hour,
+          createdAt: moment().format('YYYY-MM-DD HH:mm:ss'),
           updatedAt: moment().format('YYYY-MM-DD HH:mm:ss'),
-        } as any;
+        };
 
-        if (existingSalary) {
-          await this.employeeSalaryRepository.update(salaryData, {
-            where: { employee_id: id },
+        salary = await this.employeeSalaryRepository.create(
+          salaryData as any, 
+          {
             transaction,
-          });
-          salary = await this.employeeSalaryRepository.findOne({
-            where: { employee_id: id },
-            order: [['updatedAt', 'DESC']],
-            transaction,
-          });
-        } else {
-          salaryData.createdAt = moment().format('YYYY-MM-DD HH:mm:ss');
-          salary = await this.employeeSalaryRepository.create(salaryData, {
-            transaction,
-          });
-        }
+          },
+        );
       }
 
       await transaction.commit();
@@ -265,8 +251,18 @@ export class EmployeeService {
       }
 
       employee = employee.dataValues ? employee.dataValues : employee;
+      
       if (salary) {
         employee['salary'] = salary.dataValues ? salary.dataValues : salary;
+      } else {
+         const latestSalary = await this.employeeSalaryRepository.findOne({
+            where: { employee_id: id },
+            order: [['createdAt', 'DESC']],
+            transaction: undefined,
+         });
+         if(latestSalary) {
+             employee['salary'] = latestSalary.dataValues ? latestSalary.dataValues : latestSalary;
+         }
       }
 
       return new EmployeeDto(employee);

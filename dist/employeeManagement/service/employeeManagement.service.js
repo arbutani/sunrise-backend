@@ -230,34 +230,17 @@ let EmployeeService = class EmployeeService {
             }
             let salary = null;
             if (requestDto.salary) {
-                const existingSalary = await this.employeeSalaryRepository.findOne({
-                    where: { employee_id: id },
-                    transaction,
-                });
                 const salaryData = {
                     employee_id: id,
                     monthly_salary: requestDto.salary.monthly_salary,
                     working_days: requestDto.salary.working_days,
                     working_hour: requestDto.salary.working_hour,
+                    createdAt: (0, moment_1.default)().format('YYYY-MM-DD HH:mm:ss'),
                     updatedAt: (0, moment_1.default)().format('YYYY-MM-DD HH:mm:ss'),
                 };
-                if (existingSalary) {
-                    await this.employeeSalaryRepository.update(salaryData, {
-                        where: { employee_id: id },
-                        transaction,
-                    });
-                    salary = await this.employeeSalaryRepository.findOne({
-                        where: { employee_id: id },
-                        order: [['updatedAt', 'DESC']],
-                        transaction,
-                    });
-                }
-                else {
-                    salaryData.createdAt = (0, moment_1.default)().format('YYYY-MM-DD HH:mm:ss');
-                    salary = await this.employeeSalaryRepository.create(salaryData, {
-                        transaction,
-                    });
-                }
+                salary = await this.employeeSalaryRepository.create(salaryData, {
+                    transaction,
+                });
             }
             await transaction.commit();
             status = true;
@@ -270,6 +253,16 @@ let EmployeeService = class EmployeeService {
             employee = employee.dataValues ? employee.dataValues : employee;
             if (salary) {
                 employee['salary'] = salary.dataValues ? salary.dataValues : salary;
+            }
+            else {
+                const latestSalary = await this.employeeSalaryRepository.findOne({
+                    where: { employee_id: id },
+                    order: [['createdAt', 'DESC']],
+                    transaction: undefined,
+                });
+                if (latestSalary) {
+                    employee['salary'] = latestSalary.dataValues ? latestSalary.dataValues : latestSalary;
+                }
             }
             return new employeeManagement_dto_1.EmployeeDto(employee);
         }
