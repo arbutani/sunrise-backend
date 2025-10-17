@@ -1,1 +1,1 @@
-{"version":3,"file":"tablesList.js","sourceRoot":"","sources":["../../src/database/tablesList.ts"],"names":[],"mappings":";;;AACA,8EAAqE;AACrE,sGAAmF;AACnF,oGAA2F;AAC3F,uFAA8E;AAEjE,QAAA,SAAS,GAAG,CAAC,oCAAQ,EAAE,sCAAc,EAAE,8BAAU,EAAE,oCAAa,CAAC,CAAC"}
+{"version":3,"file":"tablesList.js","sourceRoot":"","sources":["../../src/database/tablesList.ts"],"names":[],"mappings":";;;AACA,8EAAqE;AACrE,qEAA4D;AAC5D,sGAAmF;AACnF,oGAA2F;AAC3F,uFAA8E;AAEjE,QAAA,SAAS,GAAG,CAAC,oCAAQ,EAAE,sCAAc,EAAE,8BAAU,EAAE,oCAAa,EAAE,wBAAO,CAAC,CAAC"}

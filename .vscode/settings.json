@@ -1,5 +1,6 @@
 {
     "cSpell.words": [
       
-    ]
+    ],
+    "typescript.validate.enable": true
 }

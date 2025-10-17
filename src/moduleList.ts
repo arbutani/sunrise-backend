@@ -1,6 +1,7 @@
 /* eslint-disable prettier/prettier */
 
 import { CategoriesModule } from './categories/module/categories.module';
+import { CountryModule } from './country/module/country.module';
 import { DatabaseModule } from './database/module/database.module';
 import { EmployeeModule } from './employeeManagement/module/employeeManagement.module';
 import { SharedModule } from './shared/module/shared.module';
@@ -12,4 +13,5 @@ export const moduleList = [
   DatabaseModule,
   CategoriesModule,
   SubcategoriesModule,
+  CountryModule,
 ];
