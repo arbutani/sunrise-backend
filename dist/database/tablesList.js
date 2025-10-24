@@ -5,6 +5,14 @@ const categories_entity_1 = require("../categories/entity/categories.entity");
 const country_entity_1 = require("../country/entity/country.entity");
 const employeeManagement_entity_1 = require("../employeeManagement/entity/employeeManagement.entity");
 const employeeSalary_entity_1 = require("../employeeSalaryManagement/entity/employeeSalary.entity");
+const products_entity_1 = require("../products/entity/products.entity");
 const subcategories_entity_1 = require("../subcategories/entity/subcategories.entity");
-exports.TableList = [employeeManagement_entity_1.Employee, employeeSalary_entity_1.EmployeeSalary, categories_entity_1.Categories, subcategories_entity_1.Subcategories, country_entity_1.Country];
+exports.TableList = [
+    employeeManagement_entity_1.Employee,
+    employeeSalary_entity_1.EmployeeSalary,
+    categories_entity_1.Categories,
+    subcategories_entity_1.Subcategories,
+    country_entity_1.Country,
+    products_entity_1.Products
+];
 //# sourceMappingURL=tablesList.js.map

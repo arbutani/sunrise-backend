@@ -4,14 +4,18 @@ import { CategoriesModule } from './categories/module/categories.module';
 import { CountryModule } from './country/module/country.module';
 import { DatabaseModule } from './database/module/database.module';
 import { EmployeeModule } from './employeeManagement/module/employeeManagement.module';
+import { ProductsModule } from './products/module/products.module';
 import { SharedModule } from './shared/module/shared.module';
 import { SubcategoriesModule } from './subcategories/module/subcategories.module';
 
 export const moduleList = [
+
   SharedModule,
   EmployeeModule,
   DatabaseModule,
   CategoriesModule,
   SubcategoriesModule,
   CountryModule,
+  ProductsModule,
+  
 ];

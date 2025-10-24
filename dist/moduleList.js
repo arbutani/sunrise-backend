@@ -5,6 +5,7 @@ const categories_module_1 = require("./categories/module/categories.module");
 const country_module_1 = require("./country/module/country.module");
 const database_module_1 = require("./database/module/database.module");
 const employeeManagement_module_1 = require("./employeeManagement/module/employeeManagement.module");
+const products_module_1 = require("./products/module/products.module");
 const shared_module_1 = require("./shared/module/shared.module");
 const subcategories_module_1 = require("./subcategories/module/subcategories.module");
 exports.moduleList = [
@@ -14,5 +15,6 @@ exports.moduleList = [
     categories_module_1.CategoriesModule,
     subcategories_module_1.SubcategoriesModule,
     country_module_1.CountryModule,
+    products_module_1.ProductsModule,
 ];
 //# sourceMappingURL=moduleList.js.map

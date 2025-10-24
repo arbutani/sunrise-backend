@@ -1,12 +1,12 @@
 /* eslint-disable prettier/prettier */
 import {
-  IsString,
+  
   IsNumber,
   IsOptional,
   IsUUID,
   IsNotEmpty,
 } from 'class-validator';
-import { Is } from 'sequelize-typescript';
+
 
 export class EmployeeSalaryRequestDto {
   @IsOptional()
