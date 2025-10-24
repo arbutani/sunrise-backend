@@ -171,12 +171,14 @@ let ProductsService = class ProductsService {
     }
     async updateProduct(id, requestDto, productPhoto) {
         const UPLOAD_FOLDER = 'upload/photo';
+        const projectRoot = path.resolve();
+        const uploadDir = path.join(projectRoot, UPLOAD_FOLDER);
         try {
             this.validateProductPhoto(productPhoto);
         }
         catch (e) {
             if (productPhoto?.filename) {
-                const filePath = path.join(path.resolve(), UPLOAD_FOLDER, productPhoto.filename);
+                const filePath = path.join(uploadDir, productPhoto.filename);
                 if (fs.existsSync(filePath))
                     fs.unlinkSync(filePath);
             }
@@ -189,31 +191,37 @@ let ProductsService = class ProductsService {
         const newPhotoFileName = productPhoto?.filename || '';
         let oldPhotoFileName = '';
         try {
-            const oldProduct = await this.productRepository.findByPk(id, { transaction });
+            const oldProduct = await this.productRepository.findByPk(id, {
+                transaction,
+                raw: true
+            });
             if (!oldProduct) {
                 if (newPhotoFileName) {
-                    const filePath = path.join(path.resolve(), UPLOAD_FOLDER, newPhotoFileName);
+                    const filePath = path.join(uploadDir, newPhotoFileName);
                     if (fs.existsSync(filePath))
                         fs.unlinkSync(filePath);
                 }
                 throw this.errorMessageService.GeneralErrorCore('Product not found', 404);
             }
-            oldPhotoFileName = oldProduct.photo;
+            oldPhotoFileName = oldProduct.photo || '';
             if (requestDto.name && requestDto.name !== oldProduct.name) {
-                const existing = await this.productRepository.findOne({
-                    where: { name: requestDto.name, id: { [sequelize_1.Op.ne]: id } },
+                const existingProduct = await this.productRepository.findOne({
+                    where: {
+                        name: requestDto.name,
+                        id: { [sequelize_1.Op.ne]: id }
+                    },
                     transaction,
                 });
-                if (existing) {
+                if (existingProduct) {
                     if (newPhotoFileName) {
-                        const filePath = path.join(path.resolve(), UPLOAD_FOLDER, newPhotoFileName);
+                        const filePath = path.join(uploadDir, newPhotoFileName);
                         if (fs.existsSync(filePath))
                             fs.unlinkSync(filePath);
                     }
-                    throw this.errorMessageService.GeneralErrorCore('Product name already exists', 200);
+                    throw this.errorMessageService.GeneralErrorCore('Product with this name already exists', 200);
                 }
             }
-            const productFields = {
+            const updateFields = {
                 name: requestDto.name,
                 description: requestDto.description,
                 selling_price: requestDto.selling_price,
@@ -222,34 +230,42 @@ let ProductsService = class ProductsService {
                 qty: requestDto.qty,
                 country_id: requestDto.country_id,
                 reorder_qty: requestDto.reorder_qty,
-                photo: newPhotoFileName || oldPhotoFileName,
                 updatedAt: (0, moment_1.default)().format('YYYY-MM-DD HH:mm:ss'),
             };
-            const [updateCount] = await this.productRepository.update(productFields, {
+            if (newPhotoFileName) {
+                updateFields.photo = newPhotoFileName;
+            }
+            const [updateCount] = await this.productRepository.update(updateFields, {
                 where: { id },
                 transaction,
             });
             if (updateCount === 0) {
-                throw this.errorMessageService.GeneralErrorCore('Failed to update product', 200);
+                throw this.errorMessageService.GeneralErrorCore('Failed to update product', 500);
             }
             await transaction.commit();
             status = true;
             if (newPhotoFileName && oldPhotoFileName && newPhotoFileName !== oldPhotoFileName) {
-                const oldFilePath = path.join(path.resolve(), UPLOAD_FOLDER, oldPhotoFileName);
+                const oldFilePath = path.join(uploadDir, oldPhotoFileName);
                 if (fs.existsSync(oldFilePath)) {
-                    fs.unlinkSync(oldFilePath);
+                    try {
+                        fs.unlinkSync(oldFilePath);
+                    }
+                    catch (deleteError) {
+                        console.error(`Failed to delete old photo: ${oldPhotoFileName}`, deleteError);
+                    }
                 }
             }
-            const product = await this.productRepository.findByPk(id);
-            return new products_dto_1.ProductsDto(product);
+            const updatedProduct = await this.productRepository.findByPk(id);
+            return new products_dto_1.ProductsDto(updatedProduct);
         }
         catch (error) {
             if (!status) {
                 await transaction.rollback().catch(() => { });
                 if (newPhotoFileName) {
-                    const filePath = path.join(path.resolve(), UPLOAD_FOLDER, newPhotoFileName);
-                    if (fs.existsSync(filePath))
+                    const filePath = path.join(uploadDir, newPhotoFileName);
+                    if (fs.existsSync(filePath)) {
                         fs.unlinkSync(filePath);
+                    }
                 }
             }
             throw this.errorMessageService.CatchHandler(error);

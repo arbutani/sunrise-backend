@@ -143,17 +143,20 @@ export class ProductsService {
     }
   }
 
- async updateProduct(
+async updateProduct(
   id: string,
   requestDto: ProductsPutRequestDto,
   productPhoto: Express.Multer.File | null,
 ) {
-  const UPLOAD_FOLDER = 'upload/photo'; // ✅ keep consistent
+  const UPLOAD_FOLDER = 'upload/photo';
+  const projectRoot = path.resolve();
+  const uploadDir = path.join(projectRoot, UPLOAD_FOLDER);
+  
   try {
     this.validateProductPhoto(productPhoto);
   } catch (e) {
     if (productPhoto?.filename) {
-      const filePath = path.join(path.resolve(), UPLOAD_FOLDER, productPhoto.filename);
+      const filePath = path.join(uploadDir, productPhoto.filename);
       if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
     }
     throw e;
@@ -162,40 +165,46 @@ export class ProductsService {
   const transaction = await this.sequelize.transaction({
     isolationLevel: Transaction.ISOLATION_LEVELS.REPEATABLE_READ,
   });
+  
   let status = false;
-
   const newPhotoFileName = productPhoto?.filename || '';
   let oldPhotoFileName = '';
 
   try {
-    const oldProduct = await this.productRepository.findByPk(id, { transaction });
+    const oldProduct = await this.productRepository.findByPk(id, { 
+      transaction,
+      raw: true
+    });
+    
     if (!oldProduct) {
       if (newPhotoFileName) {
-        const filePath = path.join(path.resolve(), UPLOAD_FOLDER, newPhotoFileName);
+        const filePath = path.join(uploadDir, newPhotoFileName);
         if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
       }
       throw this.errorMessageService.GeneralErrorCore('Product not found', 404);
     }
 
-    oldPhotoFileName = oldProduct.photo;
+    oldPhotoFileName = oldProduct.photo || '';
 
-    // Duplicate name validation
     if (requestDto.name && requestDto.name !== oldProduct.name) {
-      const existing = await this.productRepository.findOne({
-        where: { name: requestDto.name, id: { [Op.ne]: id } },
+      const existingProduct = await this.productRepository.findOne({
+        where: { 
+          name: requestDto.name, 
+          id: { [Op.ne]: id } 
+        },
         transaction,
       });
-      if (existing) {
+      
+      if (existingProduct) {
         if (newPhotoFileName) {
-          const filePath = path.join(path.resolve(), UPLOAD_FOLDER, newPhotoFileName);
+          const filePath = path.join(uploadDir, newPhotoFileName);
           if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
         }
-        throw this.errorMessageService.GeneralErrorCore('Product name already exists', 200);
+        throw this.errorMessageService.GeneralErrorCore('Product with this name already exists', 200);
       }
     }
 
-    // Update DB
-    const productFields = {
+    const updateFields: any = {
       name: requestDto.name,
       description: requestDto.description,
       selling_price: requestDto.selling_price,
@@ -204,38 +213,48 @@ export class ProductsService {
       qty: requestDto.qty,
       country_id: requestDto.country_id,
       reorder_qty: requestDto.reorder_qty,
-      photo: newPhotoFileName || oldPhotoFileName,
-      updatedAt: moment().format('YYYY-MM-DD HH:mm:ss')as any,
+      updatedAt: moment().format('YYYY-MM-DD HH:mm:ss'),
     };
 
-    const [updateCount] = await this.productRepository.update(productFields, {
+    if (newPhotoFileName) {
+      updateFields.photo = newPhotoFileName;
+    }
+
+    const [updateCount] = await this.productRepository.update(updateFields, {
       where: { id },
       transaction,
     });
 
     if (updateCount === 0) {
-      throw this.errorMessageService.GeneralErrorCore('Failed to update product', 200);
+      throw this.errorMessageService.GeneralErrorCore('Failed to update product', 500);
     }
 
     await transaction.commit();
     status = true;
 
-    // ✅ Delete old file only after successful DB commit
     if (newPhotoFileName && oldPhotoFileName && newPhotoFileName !== oldPhotoFileName) {
-      const oldFilePath = path.join(path.resolve(), UPLOAD_FOLDER, oldPhotoFileName);
+      const oldFilePath = path.join(uploadDir, oldPhotoFileName);
       if (fs.existsSync(oldFilePath)) {
-        fs.unlinkSync(oldFilePath);
+        try {
+          fs.unlinkSync(oldFilePath);
+        } catch (deleteError) {
+          console.error(`Failed to delete old photo: ${oldPhotoFileName}`, deleteError);
+        }
       }
     }
 
-    const product = await this.productRepository.findByPk(id);
-    return new ProductsDto(product);
+    const updatedProduct = await this.productRepository.findByPk(id);
+    return new ProductsDto(updatedProduct);
+
   } catch (error) {
     if (!status) {
       await transaction.rollback().catch(() => {});
+      
       if (newPhotoFileName) {
-        const filePath = path.join(path.resolve(), UPLOAD_FOLDER, newPhotoFileName);
-        if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+        const filePath = path.join(uploadDir, newPhotoFileName);
+        if (fs.existsSync(filePath)) {
+          fs.unlinkSync(filePath);
+        }
       }
     }
     throw this.errorMessageService.CatchHandler(error);
